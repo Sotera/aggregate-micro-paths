@@ -12,7 +12,9 @@ The points in space and time are used to create "micro paths" if certain conditi
 
 ![Short Example](./img/AMP_example.PNG "Aggregate Micro-Path Example")
 
-Track segments are then binned based on a grid (specified in conf) and aggregated to create a heat map.
+Track segments are then binned based on a grid (configurable resolution) and aggregated to create a heat map.
+
+![Paris Example](./img/paris_example.PNG "Binning Example")
 
 Usage:
 ==
