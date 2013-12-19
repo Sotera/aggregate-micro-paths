@@ -1,0 +1,45 @@
+
+This project makes use of several other xdata projects. You must build and install each 
+prior to building the SparkMicroPath Project.
+
+OCULUS:
+
+There are two classes that I am making use of that have hard coded values containing cluster connection information in them.  If you are not working on the xdata cloud you will need to modify these classes prior to building.  This is a temporary work around, in future releases these classes will be configurable wihout the need to modify source and rebuild. 
+
+com.oculusinfo.xdata.hadoop.HDFSConnector.scala  in gitxdata/tools/visualizations/oculus/aperture/demos/xdata/SC2013/Spark
+
+And
+
+com.oculusinfo.hdfs.HbaseConnector.java in gitxdata/tools/visualizations/oculus/aperture/oculus-common/hdfs-utilities
+
+
+
+"com.oculusinfo" % "geometric-utilities" % "0.0.1-SNAPSHOT",
+"com.oculusinfo" % "hdfs-utilities" % "0.0.1-SNAPSHOT",
+"com.oculusinfo" % "math-utilities" % "0.0.1-SNAPSHOT",
+"com.oculusinfo.xdata" %% "xdata-summer-camp-2013" % "0.0.1-SNAPSHOT"
+
+To build and install oclus packages perform the folloing
+
+navigate to gitxdata/tools/visualizations/oculus/aperture/oculus-common
+
+mvn clean package install
+
+navigate to gitxdata/tools/visualizations/oculus/aperture/demos/xdata/SC2013/Spark
+
+sbt clean package assembly publish-local
+
+
+SPARK:
+
+You also need to compile against your version of spark.  You can download spark from
+http://spark.incubator.apache.org/downloads.html
+
+Install spark locally and change this projects build.sbt to use the correct version.
+
+EXAMPLE:
+
+To run the included example 
+
+sbt clean package
+sbt "run example.conf"
