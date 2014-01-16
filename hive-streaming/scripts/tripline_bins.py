@@ -162,7 +162,7 @@ def bearing(lat1, lon1, lat2, lon2):
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
   (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = line.split("\t")
-  date2 = date2.strip()
+  track_id = track_id.strip()
   
   #new time stuff
   actualDate2 = datetime.datetime.strptime(date2, '%Y-%m-%d %H:%M:%S')
