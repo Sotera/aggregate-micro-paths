@@ -3,8 +3,8 @@ import math
 import datetime
 sys.path.append('./') 
 from config import AggregateMicroPathConfig
-import numpy
-from numpy import *
+#import numpy
+#from numpy import *
 import gmpy 
 
 class Point () :
