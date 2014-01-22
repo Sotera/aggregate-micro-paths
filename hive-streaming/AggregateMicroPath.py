@@ -74,7 +74,7 @@ def extract_paths(conf):
 # Extract trip line intersects from paths
 #
 def extract_trip_line_intersects(configuration):
-  table_schema = "intersectX string, intersectY string, dt string"
+  table_schema = "intersectX string, intersectY string, dt string, velocity float, direction float, track_id string"
   create_new_hive_table("micro_path_tripline_bins_" + configuration.table_name,table_schema)
   
   
@@ -87,20 +87,50 @@ def extract_trip_line_intersects(configuration):
     FROM micro_path_track_extract_""" + configuration.table_name + """
     INSERT OVERWRITE TABLE micro_path_tripline_bins_""" + configuration.table_name + """
     
-    SELECT TRANSFORM(alat, alon, blat, blon, adt, bdt)
+    SELECT TRANSFORM(alat, alon, blat, blon, adt, bdt, velocity, id)
     USING \"python tripline_bins.py """ + configuration.config_file + """ \"
-    AS intersectX,intersectY,dt
+    AS intersectX,intersectY,dt,velocity,direction,track_id
     ;   
     """
   subprocessCall(["hive","-e",hql_script]) 
   
-  
+#
+# take values form micro_path_tripline_bins and aggregate the counts
+#
+def aggregate_intersection_list(configuration):
+  table_schema ="x string, y string, ids string, dt string"
+  create_new_hive_table("micro_path_intersect_list_" + configuration.table_name,table_schema)
+
+  #hadoop streaming to extract paths
+  hql_script = """
+    set mapred.map.tasks=96;
+    set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE micro_path_intersect_list_""" + configuration.table_name + """
+    
+    SELECT 
+      intersectX,intersectY,dt
+      STUFF((
+        SELECT ', ' + [Name] + ':' + CAST([Value] AS VARCHAR(MAX)) 
+        FROM #YourTable 
+        WHERE (ID = Results.ID) 
+        FOR XML PATH(''),TYPE).value('(./text())[1]','VARCHAR(MAX)')
+      ,1,2,'') AS ids
+    FROM micro_path_tripline_bins_""" + configuration.table_name + """
+    GROUP BY intersectX,intersectY,dt
+    
+    SELECT intersectX,intersectY,ids,dt
+    FROM micro_path_tripline_bins_""" + configuration.table_name + """
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+  subprocessCall(["hive","-e",hql_script])
 
 #
 # take values form micro_path_tripline_bins and aggregate the counts
 #
 def aggregate_intersection_points(configuration):
-  table_schema ="x string, y string, value int"
+  table_schema ="x string, y string, value int, dt string"
   create_new_hive_table("micro_path_intersect_counts_" + configuration.table_name,table_schema)
 
   #hadoop streaming to extract paths
@@ -109,13 +139,46 @@ def aggregate_intersection_points(configuration):
     set mapred.reduce.tasks=96;
     
     INSERT OVERWRITE TABLE micro_path_intersect_counts_""" + configuration.table_name + """
-    SELECT intersectX,intersectY,count(*)
+    SELECT intersectX,intersectY,count(1),dt
     FROM micro_path_tripline_bins_""" + configuration.table_name + """
-    GROUP BY intersectX,intersectY
+    GROUP BY intersectX,intersectY,dt
     ;   
     """
   subprocessCall(["hive","-e",hql_script])
+  
+def aggregate_intersection_velocity(configuration):
+  table_schema ="x string, y string, velocity float, dt string"
+  create_new_hive_table("micro_path_intersect_velocity_" + configuration.table_name,table_schema)
 
+  #hadoop streaming to extract paths
+  hql_script = """
+    set mapred.map.tasks=96;
+    set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE micro_path_intersect_velocity_""" + configuration.table_name + """
+    SELECT intersectX,intersectY,avg(velocity),dt
+    FROM micro_path_tripline_bins_""" + configuration.table_name + """
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+  subprocessCall(["hive","-e",hql_script]) 
+                    
+def aggregate_intersection_direction(configuration):
+  table_schema ="x string, y string, direction int, dt string"
+  create_new_hive_table("micro_path_intersect_direction_" + configuration.table_name,table_schema)
+
+  #hadoop streaming to extract paths
+  hql_script = """
+    set mapred.map.tasks=96;
+    set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE micro_path_intersect_direction_""" + configuration.table_name + """
+    SELECT intersectX,intersectY,avg(direction),dt
+    FROM micro_path_tripline_bins_""" + configuration.table_name + """
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+  subprocessCall(["hive","-e",hql_script]) 
 
 #
 # 
@@ -139,6 +202,14 @@ def main(config_file):
   # aggregate intersection points
   print ("aggregate intersection points")
   aggregate_intersection_points(configuration)
+  
+  # aggregate intersection velocity
+  print ("aggregate intersection velocity")
+  aggregate_intersection_velocity(configuration)
+  
+  # aggregate intersection vdirection
+  print ("aggregate intersection direction")
+  aggregate_intersection_direction(configuration)
 
   print('End time: ' + str(time() - start_time))
 

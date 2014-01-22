@@ -143,18 +143,61 @@ def intersect(a1,a2,b1,b2):
     #return (intx,inty,-40)
 #starttime = time()
 
+def bearing(lat1, lon1, lat2, lon2):
+    #lat1, lon1 = origin
+    #lat2, lon2 = destination
+
+    rlat1 = math.radians(lat1)
+    rlat2 = math.radians(lat2)
+    rlon1 = math.radians(lon1)
+    rlon2 = math.radians(lon2)
+    dlon = math.radians(lon2-lon1)
+
+    b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon)) # bearing calc
+    bd = math.degrees(b)
+    br,bn = divmod(bd+360,360) # the bearing remainder and final bearing
+    
+    return bn
 
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
-  (lat1, lon1, lat2, lon2, date1, date2) = line.split("\t")
-  date2 = date2.strip()
+  (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = line.split("\t")
+  track_id = track_id.strip()
+  
+  #new time stuff
+  actualDate2 = datetime.datetime.strptime(date2, '%Y-%m-%d %H:%M:%S')
+
+  if configuration.temporal_split == 'all':
+    actualDate2 = actualDate2.replace(year=datetime.MAXYEAR, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+  
+  if configuration.temporal_split == 'year':
+    actualDate2 = actualDate2.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+  
+  if configuration.temporal_split == 'month':
+    actualDate2 = actualDate2.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+  
+  if configuration.temporal_split == 'day':
+    actualDate2 = actualDate2.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+  if configuration.temporal_split == 'hour':
+    actualDate2 = actualDate2.replace(minute=0, second=0, microsecond=0)
+    
+  if configuration.temporal_split == '10min':
+    newMin = actualDate2.minute - (actualDate2.minute % 10)
+    actualDate2 = actualDate2.replace(minute=newMin, second=0, microsecond=0)
+    
+  if configuration.temporal_split == 'minute':
+    actualDate2 = actualDate2.replace(second=0, microsecond=0)
+  
+  finalDate2 = actualDate2.strftime('%Y-%m-%d %H:%M:%S')
   
   lat1 = float(lat1)
   lon1 = float(lon1)
   lat2 = float(lat2)
   lon2 = float(lon2)
   
-  #vel = float(vel)
+  vel = float(vel)
+  direction = bearing(lat1, lon1, lat2, lon2)
 
   for blanket in configuration.triplineBlankets:
 
@@ -223,8 +266,7 @@ for line in sys.stdin:
       #Re-adjust for the international date line 
       if intersectY < -180:
         intersectY = intersectY + 360.0
-      #out = [intersectX,intersectY,finalDate2,vel]
-      out = [intersectX,intersectY,date2]
+      out = [intersectX,intersectY,finalDate2,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)   
   
@@ -262,8 +304,7 @@ for line in sys.stdin:
       if intersectY < -180:
         intersectY = intersectY + 360.0
      
-      #out = [intersectX,intersectY,finalDate2,vel]
-      out = [intersectX,intersectY,date2]
+      out = [intersectX,intersectY,finalDate2,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)
 #stoptime = time()-starttime

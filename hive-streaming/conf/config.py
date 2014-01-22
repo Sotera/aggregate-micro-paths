@@ -47,6 +47,7 @@ class AggregateMicroPathConfig:
         self.tripLonMin = int(math.floor(self.tripLon1/self.resolutionLon)) #8
         self.tripLonMax = int(math.ceil(self.tripLon2/self.resolutionLon)) #9
         self.triplineBlankets.append([self.tripLat1,self.tripLon1,self.tripLat2,self.tripLon2,self.tripname,self.resolutionLat,self.resolutionLon,self.tripLatMin,self.tripLatMax,self.tripLonMin,self.tripLonMax])
+	self.temporal_split = configParser.get("AggregateMicroPath", "temporal_split") 
         
         
 

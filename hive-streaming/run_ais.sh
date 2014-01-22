@@ -14,6 +14,6 @@ rm -f output/micro_path_ais_results.csv
 python AggregateMicroPath.py -c ais.ini
 
 # Get Results
-echo -e "latitude\tlongitude\tcount" > output/micro_path_ais_results.csv
+echo -e "latitude\tlongitude\tcount\tdate" > output/micro_path_ais_results.csv
 hive -S -e "select * from micro_path_intersect_counts_ais_small_final;" >> output/micro_path_ais_results.csv
 

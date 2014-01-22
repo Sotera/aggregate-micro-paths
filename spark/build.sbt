@@ -9,6 +9,7 @@ retrieveManaged := true
 mainClass in (Compile,run) := Some("org.xdata.analytics.spark.micropathing.Main")
 
 libraryDependencies ++= Seq(
+  "org.ow2.asm" % "asm" % "4.0",
   "org.apache.hadoop" % "hadoop-client" % "2.0.0-mr1-cdh4.5.0",
   "org.apache.spark" %% "spark-core" % "0.8.0-incubating",
   "org.eclipse.jetty.orbit" % "javax.servlet" % "2.5.0.v201103041518",
