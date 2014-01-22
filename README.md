@@ -26,4 +26,4 @@ Implementation details:
 
 This algorithm is implemented using HIVE with hadoop streaming.   The python file "AggregateMicroPath.py" generates and executes HQL to create data tables and execute queries.  The scripts folder contains additional python files that are used with HADOOP streaming to process the data.
 
-
+We also provide a Spark based implementaiton that integrates direcly with an aperture tile server.
