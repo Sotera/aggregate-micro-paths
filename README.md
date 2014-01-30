@@ -1,4 +1,4 @@
-aggregate-micro-paths
+Aggregate Micro Paths
 =====================
 
 <img src="https://raw.github.com/Sotera/aggregate-micro-paths/master/docs/images/europe-1.png" align="center" width="600" />
