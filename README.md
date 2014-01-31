@@ -7,7 +7,7 @@ Infer movement patterns from large amounts of geo-temporal data in a cloud envir
 
 Visit the [wiki](https://github.com/Sotera/aggregate-micro-paths/wiki) for more information.
 
-## Quick Start
+### Quick Start
 
 #### Prerequisites
 
