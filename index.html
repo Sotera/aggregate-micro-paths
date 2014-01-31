@@ -4,7 +4,7 @@
   <head>
     <meta charset='utf-8' />
     <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Aggregate-micro-paths : Infer movement patterns from large amounts of geo-temporal data in a cloud environment." />
+    <meta name="description" content="Aggregate-micro-paths : Analytic for Visualizing Geo-Temporal Features of Big Data" />
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
@@ -19,7 +19,7 @@
           <a id="forkme_banner" href="https://github.com/Sotera/aggregate-micro-paths">View on GitHub</a>
 
           <h1 id="project_title">Aggregate-micro-paths</h1>
-          <h2 id="project_tagline">Infer movement patterns from large amounts of geo-temporal data in a cloud environment.</h2>
+          <h2 id="project_tagline">Analytic for Visualizing Geo-Temporal Features of Big Data</h2>
 
             <section id="downloads">
               <a class="zip_download_link" href="https://github.com/Sotera/aggregate-micro-paths/zipball/master">Download this project as a .zip file</a>
@@ -32,13 +32,30 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
         <h1>
-<a name="aggregate-micro-paths" class="anchor" href="#aggregate-micro-paths"><span class="octicon octicon-link"></span></a>aggregate-micro-paths</h1>
+<a name="aggregate-micro-paths" class="anchor" href="#aggregate-micro-paths"><span class="octicon octicon-link"></span></a>Aggregate Micro Paths</h1>
+
+<p><img src="https://raw.github.com/Sotera/aggregate-micro-paths/master/docs/images/europe-1.png" align="right" width="600"></p>
 
 <p>Infer movement patterns from large amounts of geo-temporal data in a cloud environment.</p>
 
-<p><a href="http://nbviewer.ipython.org/github/Sotera/aggregate-micro-paths/blob/master/docs/AMP-README.ipynb">Documentation</a></p>
+<p>Visit the <a href="https://github.com/Sotera/aggregate-micro-paths/wiki">wiki</a> for more information.</p>
 
-<p><a href="http://nbviewer.ipython.org/github/Sotera/aggregate-micro-paths/blob/master/docs/HIVE-README.ipynb">Hive Implementation</a></p>
+<h3>
+<a name="quick-start" class="anchor" href="#quick-start"><span class="octicon octicon-link"></span></a>Quick Start</h3>
+
+<h4>
+<a name="prerequisites" class="anchor" href="#prerequisites"><span class="octicon octicon-link"></span></a>Prerequisites</h4>
+
+<ul>
+<li>Hive</li>
+<li>Hadoop (streaming)</li>
+<li>Python + gmpy</li>
+</ul><h4>
+<a name="example-code" class="anchor" href="#example-code"><span class="octicon octicon-link"></span></a>Example code</h4>
+
+<p>To run the example, execute run_ais.sh found in /hive-streaming.  This script will unpack the sample data, upload it to the hadoop filesystem, enter it into Hive, and run the aggregate micro pathing algorithm.  When completed, it will also pull down the finished count data from Hive and place it locally into a .csv file located in the hive-streaming/output directory.</p>
+
+<p>For detailed instructions, go here.</p>
       </section>
     </div>
 
