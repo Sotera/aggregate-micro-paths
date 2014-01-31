@@ -1,7 +1,7 @@
 Aggregate Micro Paths
 =====================
 
-<img src="https://raw.github.com/Sotera/aggregate-micro-paths/master/docs/images/europe-1.png" align="center" width="600" />
+<img src="https://raw.github.com/Sotera/aggregate-micro-paths/master/docs/images/europe-1.png" align="right" width="600" />
 
 Infer movement patterns from large amounts of geo-temporal data in a cloud environment.
 
