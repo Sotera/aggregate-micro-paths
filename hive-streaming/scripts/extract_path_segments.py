@@ -45,7 +45,6 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
   return d
 
 def dateStrptime(dt):
-    dt = dt.split('.')[0]
     try:
         return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
     except ValueError:
