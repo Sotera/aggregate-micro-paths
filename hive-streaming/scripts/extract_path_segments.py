@@ -44,6 +44,18 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
   d = float(R * c)
   return d
 
+def dateStrptime(dt):
+    dt = dt.split('.')[0]
+    try:
+        return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+    except ValueError:
+        pass
+    return None
+
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
   line = line.replace('\"','') # remove quotes
@@ -53,8 +65,9 @@ for line in sys.stdin:
   (user_id, dt, lat, lon) = map(lambda x: x.strip(),line.split("\t"))
   try:
     dt = dt.split('.')[0]
-    #dt_parse = datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
-    dt_parse = datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+    dt_parse = dateStrptime(dt)
+    if not dt_parse:
+        continue
   except:
       continue
 
