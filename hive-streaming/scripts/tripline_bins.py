@@ -2,6 +2,8 @@ import sys
 import math
 import datetime
 sys.path.append('./') 
+
+#sys.path.append('../conf')
 from config import AggregateMicroPathConfig
 #import numpy
 #from numpy import *
@@ -17,6 +19,33 @@ def ccw(A,B,C):
 
 def isgtzero (a) :
     return a > 0
+
+#
+# modify a pair of lat or lon coordinates to correctly
+# calcuate the shortest distance between them.
+#
+def wrapDistances(d1,d2):
+  if d1 < -90 and d2 > 90:
+    d2 = d2 - 360
+  elif d2 < -90 and d1 > 90:
+    d1 = d1 - 360
+  return (d1,d2)
+
+
+# compute the distance (in kilometers) between two points in lat / Ion
+# this method makes use of the haversine formula of computing distance
+def computeDistanceKM(lat1, lon1, lat2, lon2):
+  #this computes distance in km
+  (lat1,lat2) = wrapDistances(lat1,lat2)
+  (lon1,lon2) = wrapDistances(lon1,lon2)
+  R=6371
+  dlat = math.radians(float(lat2)-float(lat1))
+  dlon = math.radians(float(lon2)-float(lon1))
+  a = float(math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2))
+  c = float(2 * math.atan2(math.sqrt(a), math.sqrt(1-a)))
+  d = float(R * c)
+  return d
+
 
 def betweenpts(A1,A2,Q,threshold=0.0000001):
     compAxMin = gmpy.mpf(min(A1.x,A2.x) - gmpy.mpf(threshold));
@@ -159,11 +188,20 @@ def bearing(lat1, lon1, lat2, lon2):
     
     return bn
 
+def interpolatedTime(start_dt, start_lat, start_lon, end_lat, end_lon, vel):
+    distance = computeDistanceKM(start_lat, start_lon, end_lat, end_lon)
+    hours = distance / vel if vel > 0.00001 else 0.00001
+    seconds = hours * 60 * 60 
+    return start_dt + datetime.timedelta(seconds=int(round(seconds))) 
+
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
-  (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = line.split("\t")
+  track_row = line.split("\t")
+  (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = track_row
+
   track_id = track_id.strip()
   
+  start_dt = datetime.datetime.strptime(date1, '%Y-%m-%d %H:%M:%S')
   #new time stuff
   actualDate2 = datetime.datetime.strptime(date2, '%Y-%m-%d %H:%M:%S')
 
@@ -266,7 +304,8 @@ for line in sys.stdin:
       #Re-adjust for the international date line 
       if intersectY < -180:
         intersectY = intersectY + 360.0
-      out = [intersectX,intersectY,finalDate2,vel,direction,track_id]
+      dt = interpolatedTime(start_dt, lat1, lon1, intersectX, intersectY, vel)
+      out = [intersectX,intersectY,dt,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)   
   
@@ -303,8 +342,9 @@ for line in sys.stdin:
       #Re-adjust for the international date line 
       if intersectY < -180:
         intersectY = intersectY + 360.0
-     
-      out = [intersectX,intersectY,finalDate2,vel,direction,track_id]
+    
+      dt = interpolatedTime(start_dt, lat1, lon1, intersectX, intersectY, vel)
+      out = [intersectX,intersectY,dt,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)
 #stoptime = time()-starttime
