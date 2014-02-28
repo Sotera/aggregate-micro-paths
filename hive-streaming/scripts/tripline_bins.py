@@ -194,40 +194,34 @@ def interpolatedTime(start_dt, start_lat, start_lon, end_lat, end_lon, vel):
     seconds = hours * 60 * 60 
     return start_dt + datetime.timedelta(seconds=int(round(seconds))) 
 
+
+def temporalSplit(dt, which):
+    identity = lambda d : d 
+
+    def min10(d):
+        newMin = d.minute - (d.minute % 10)
+        return d.replace(minute=newMin, second=0, microsecond=0)
+
+    conds = {
+        'all' : lambda d : d.replace(year=datetime.MAXYEAR, month=1, day=1, hour=0, minute=0, second=0, microsecond=0),
+        'year': lambda d : d.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0),
+        'month': lambda d : d.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        'day' : lambda d : d.replace(hour=0, minute=0, second=0, microsecond=0),
+        'hour': lambda d : d.replace(minute=0, second=0, microsecond=0),
+        '10min' : min10,
+        'minute' : lambda d: d.replace(second=0, microsecond=0) 
+    }
+
+    finalDt = conds.get(which.lower(), identity)(dt)
+    return finalDt.strftime('%Y-%m-%d %H:%M:%S')
+
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
   track_row = line.split("\t")
   (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = track_row
 
-  track_id = track_id.strip()
-  
+  track_id = track_id.strip()  
   start_dt = datetime.datetime.strptime(date1, '%Y-%m-%d %H:%M:%S')
-  #new time stuff
-  actualDate2 = datetime.datetime.strptime(date2, '%Y-%m-%d %H:%M:%S')
-
-  if configuration.temporal_split == 'all':
-    actualDate2 = actualDate2.replace(year=datetime.MAXYEAR, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-  
-  if configuration.temporal_split == 'year':
-    actualDate2 = actualDate2.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-  
-  if configuration.temporal_split == 'month':
-    actualDate2 = actualDate2.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-  
-  if configuration.temporal_split == 'day':
-    actualDate2 = actualDate2.replace(hour=0, minute=0, second=0, microsecond=0)
-    
-  if configuration.temporal_split == 'hour':
-    actualDate2 = actualDate2.replace(minute=0, second=0, microsecond=0)
-    
-  if configuration.temporal_split == '10min':
-    newMin = actualDate2.minute - (actualDate2.minute % 10)
-    actualDate2 = actualDate2.replace(minute=newMin, second=0, microsecond=0)
-    
-  if configuration.temporal_split == 'minute':
-    actualDate2 = actualDate2.replace(second=0, microsecond=0)
-  
-  finalDate2 = actualDate2.strftime('%Y-%m-%d %H:%M:%S')
   
   lat1 = float(lat1)
   lon1 = float(lon1)
@@ -305,7 +299,8 @@ for line in sys.stdin:
       if intersectY < -180:
         intersectY = intersectY + 360.0
       dt = interpolatedTime(start_dt, lat1, lon1, intersectX, intersectY, vel)
-      out = [intersectX,intersectY,dt,vel,direction,track_id]
+      finalDate = temporalSplit(dt, configuration.temporal_split)
+      out = [intersectX,intersectY,finalDate,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)   
   
@@ -344,7 +339,8 @@ for line in sys.stdin:
         intersectY = intersectY + 360.0
     
       dt = interpolatedTime(start_dt, lat1, lon1, intersectX, intersectY, vel)
-      out = [intersectX,intersectY,dt,vel,direction,track_id]
+      finalDate = temporalSplit(dt, configuration.temporal_split)
+      out = [intersectX,intersectY,finalDate,vel,direction,track_id]
       out = map(lambda x: str(x),out)
       print "\t".join(out)
 #stoptime = time()-starttime
