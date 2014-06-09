@@ -19,4 +19,4 @@ Visit the [wiki](https://github.com/Sotera/aggregate-micro-paths/wiki) for more 
 
 To run the example, execute run_ais.sh found in /hive-streaming.  This script will unpack the sample data, upload it to the hadoop filesystem, enter it into Hive, and run the aggregate micro pathing algorithm.  When completed, it will also pull down the finished count data from Hive and place it locally into a .csv file located in the hive-streaming/output directory.
 
-For detailed instructions, go here.
+For detailed instructions, [go here](https://github.com/Sotera/aggregate-micro-paths/wiki).
