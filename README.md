@@ -16,8 +16,7 @@ Specific formatting and analytic tool configurations for using your own data set
 
 ## What Does This Do?
 1. Infers movement patterns based on given geo-temporal data and build tracks (or paths) of movement for each unique object in your collection.
-2. Determine spacial and temporal co-occurrence for your objects based off the inferred movement patterns.
-3. Produce a graph object where relationships are based off the (configurable) definition of geospatial and temporal co-occurrence.
+2. Create data tables that aggregate information regarding track activity within an area, average velocity and movement of tracks, and average direction/bearing of tracks.
 
 ## What Do You Need To Know? ##
 In order to utilize your own data sets, some knowledge of the following aspects will be required:
