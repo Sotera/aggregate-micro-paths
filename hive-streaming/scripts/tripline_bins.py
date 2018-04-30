@@ -1,6 +1,6 @@
 # Copyright 2016 Sotera Defense Solutions Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License”);
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -17,11 +17,15 @@ import math
 import datetime
 sys.path.append('./') 
 
-#sys.path.append('../conf')
+# The line below works in python shell but doesn't work via hive, replace it with load_dynamic
+#import gmpy2 
+import imp
+gmpy2 = imp.load_dynamic('gmpy2', '/opt/anaconda/lib/python2.7/site-packages/gmpy2.so')
+
+sys.path.append('../conf')
 from config import AggregateMicroPathConfig
 #import numpy
 #from numpy import *
-import gmpy 
 
 class Point () :
     def __init__(self,x,y):
@@ -62,10 +66,10 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
 
 
 def betweenpts(A1,A2,Q,threshold=0.0000001):
-    compAxMin = gmpy.mpf(min(A1.x,A2.x) - gmpy.mpf(threshold));
-    compAxMax = gmpy.mpf(max(A1.x,A2.x) + gmpy.mpf(threshold));
-    compAyMin = gmpy.mpf(min(A1.y,A2.y) - gmpy.mpf(threshold));
-    compAyMax = gmpy.mpf(max(A1.y,A2.y) + gmpy.mpf(threshold));
+    compAxMin = gmpy2.mpfr(min(A1.x,A2.x) - gmpy2.mpfr(threshold));
+    compAxMax = gmpy2.mpfr(max(A1.x,A2.x) + gmpy2.mpfr(threshold));
+    compAyMin = gmpy2.mpfr(min(A1.y,A2.y) - gmpy2.mpfr(threshold));
+    compAyMax = gmpy2.mpfr(max(A1.y,A2.y) + gmpy2.mpfr(threshold));
     if compAxMin <= Q.x <= compAxMax and compAyMin <= Q.y <= compAyMax:
         return True
     return False
@@ -81,20 +85,20 @@ def intersect_gmpy (A,B,C,D):
     or (abc == 0 and betweenpts(A,B,C)) or (abd == 0 and betweenpts(A,B,D))\
     or (isgtzero (acd) != isgtzero (bcd) and isgtzero (abc) != isgtzero (abd)) :
 
-        denom = gmpy.mpf(((D.y-C.y)*(B.x-A.x))- ((D.x-C.x)*(B.y-A.y)))
-        uanumerator = gmpy.mpf(((D.x-C.x)*(A.y-C.y))-((D.y-C.y)*(A.x-C.x)))
-        ubnumerator = gmpy.mpf(((B.x-A.x)*(A.y-C.y))-((B.y-A.y)*(A.x-C.x)))
+        denom = gmpy2.mpfr(((D.y-C.y)*(B.x-A.x))- ((D.x-C.x)*(B.y-A.y)))
+        uanumerator = gmpy2.mpfr(((D.x-C.x)*(A.y-C.y))-((D.y-C.y)*(A.x-C.x)))
+        ubnumerator = gmpy2.mpfr(((B.x-A.x)*(A.y-C.y))-((B.y-A.y)*(A.x-C.x)))
         if denom == 0:
             # Lines are parallel, so return no
             return (0,0,0)
         else:
-            ua = gmpy.mpf(uanumerator/denom)
-            ub = gmpy.mpf(ubnumerator/denom)
+            ua = gmpy2.mpfr(uanumerator/denom)
+            ub = gmpy2.mpfr(ubnumerator/denom)
 
             #if ua and ub are both between 0 and 1, then the intersection is in  both segments
             #NOTE: it does not matter which determinant we use for the equations below
-            x = gmpy.mpf (A.x + (ua*(B.x-A.x)))
-            y = gmpy.mpf (A.y + (ua*(B.y-A.y)))
+            x = gmpy2.mpfr (A.x + (ua*(B.x-A.x)))
+            y = gmpy2.mpfr (A.y + (ua*(B.y-A.y)))
             sign = 1
 
             #if the segment has the same y values (horizontal) then if going west it is negative
