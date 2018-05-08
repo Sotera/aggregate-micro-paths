@@ -24,7 +24,7 @@ In order to utilize your own data sets, some knowledge of the following aspects 
 * **[Python programming language](https://www.python.org/)**
 
 ## Software Dependencies ##
-* **[Cloudera CDH 5.x](http://www.cloudera.com/content/cloudera/en/products-and-services/cdh.html)**, Hadoop {streaming}
+* **[Cloudera CDH 4.x](http://www.cloudera.com/content/cloudera/en/products-and-services/cdh.html)**, Hadoop {streaming}
 * **[Apache Hive](http://hive.apache.org/)**
 * **[Python programming language](https://www.python.org/)** + gmpy
 
