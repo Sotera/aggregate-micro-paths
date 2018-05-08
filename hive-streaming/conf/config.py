@@ -42,6 +42,7 @@ class AggregateMicroPathConfig:
         configParser = SafeConfigParser()
         configParser.read(basePath + config)
         self.config_file = config 
+	self.database_name = configParser.get("AggregateMicroPath", "database_name")
         self.table_name = configParser.get("AggregateMicroPath", "table_name") 
         self.table_schema_id = configParser.get("AggregateMicroPath", "table_schema_id") 
         self.table_schema_dt = configParser.get("AggregateMicroPath", "table_schema_dt") 
