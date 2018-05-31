@@ -1,6 +1,6 @@
 # Copyright 2016 Sotera Defense Solutions Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License”);
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -42,6 +42,7 @@ class AggregateMicroPathConfig:
         configParser = SafeConfigParser()
         configParser.read(basePath + config)
         self.config_file = config 
+	self.database_name = configParser.get("AggregateMicroPath", "database_name")
         self.table_name = configParser.get("AggregateMicroPath", "table_name") 
         self.table_schema_id = configParser.get("AggregateMicroPath", "table_schema_id") 
         self.table_schema_dt = configParser.get("AggregateMicroPath", "table_schema_dt") 
