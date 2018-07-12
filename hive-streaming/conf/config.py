@@ -42,7 +42,7 @@ class AggregateMicroPathConfig:
         configParser = SafeConfigParser()
         configParser.read(basePath + config)
         self.config_file = config 
-	self.database_name = configParser.get("AggregateMicroPath", "database_name")
+        self.database_name = configParser.get("AggregateMicroPath", "database_name")
         self.table_name = configParser.get("AggregateMicroPath", "table_name") 
         self.table_schema_id = configParser.get("AggregateMicroPath", "table_schema_id") 
         self.table_schema_dt = configParser.get("AggregateMicroPath", "table_schema_dt") 
@@ -62,7 +62,7 @@ class AggregateMicroPathConfig:
         self.tripLonMin = int(math.floor(self.tripLon1/self.resolutionLon)) #8
         self.tripLonMax = int(math.ceil(self.tripLon2/self.resolutionLon)) #9
         self.triplineBlankets.append([self.tripLat1,self.tripLon1,self.tripLat2,self.tripLon2,self.tripname,self.resolutionLat,self.resolutionLon,self.tripLatMin,self.tripLatMax,self.tripLonMin,self.tripLonMax])
-	self.temporal_split = configParser.get("AggregateMicroPath", "temporal_split") 
+        self.temporal_split = configParser.get("AggregateMicroPath", "temporal_split") 
         
         
 
