@@ -1,3 +1,4 @@
+use ${hiveconf:database};
 drop table ais_small;
 create external table ais_small
 (
