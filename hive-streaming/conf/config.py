@@ -48,8 +48,8 @@ class AggregateMicroPathConfig:
         self.table_schema_dt = configParser.get("AggregateMicroPath", "table_schema_dt") 
         self.table_schema_lat = configParser.get("AggregateMicroPath", "table_schema_lat") 
         self.table_schema_lon = configParser.get("AggregateMicroPath", "table_schema_lon") 
-        self.time_filter = long(configParser.get("AggregateMicroPath", "time_filter")) 
-        self.distance_filter = long(configParser.get("AggregateMicroPath", "distance_filter"))
+        self.time_filter = configParser.get("AggregateMicroPath", "time_filter")
+        self.distance_filter = configParser.get("AggregateMicroPath", "distance_filter")
         self.tripLat1 = float(configParser.get("AggregateMicroPath", "lower_left_lat")) 
         self.tripLon1 = float(configParser.get("AggregateMicroPath", "lower_left_lon"))
         self.tripLat2 = float(configParser.get("AggregateMicroPath", "upper_right_lat")) 
@@ -65,4 +65,3 @@ class AggregateMicroPathConfig:
         self.temporal_split = configParser.get("AggregateMicroPath", "temporal_split") 
         
         
-

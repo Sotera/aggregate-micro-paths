@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import time
+from time import time, localtime, strftime
 import sys
 import subprocess
 from optparse import OptionParser
@@ -200,16 +200,16 @@ def aggregate_intersection_direction(configuration):
 #
 def main(config_file):
  
-  start_time = time()
-  print('Start time: ' + str(start_time))
-  print("Loading config from conf/[{0}]").format(config_file)
+  print(f'Start time: {strftime("%d %b %Y %H:%M:%S", localtime())}')
+  start_time = time() # Higher precision
+  print(f"Loading config from conf/[{config_file}]")
   configuration = AggregateMicroPathConfig(config_file, "conf/")
- 
- 
+
+
   print("extracting path data")
   # create a new table and extract path data
   extract_paths(configuration)
-  
+
   # emit points where segemnts intersect with trip line blankets
   print("emit trip line blanket intersects")
   extract_trip_line_intersects(configuration)
@@ -217,16 +217,17 @@ def main(config_file):
   # aggregate intersection points
   print ("aggregate intersection points")
   aggregate_intersection_points(configuration)
-  
+
   # aggregate intersection velocity
   print ("aggregate intersection velocity")
   aggregate_intersection_velocity(configuration)
-  
+
   # aggregate intersection vdirection
   print ("aggregate intersection direction")
   aggregate_intersection_direction(configuration)
 
-  print('End time: ' + str(time() - start_time))
+  Δt_s = (time() - start_time)
+  print(f'Elapsed time: {Δt_s:.3f}s')
 
 
 #
