@@ -15,22 +15,20 @@
 import sys
 import math
 import datetime
-sys.path.append('./') 
+#sys.path.append('./') 
+#sys.path.append('../conf')
 
 # The line below works in python shell but doesn't work via hive, replace it with load_dynamic
 #import gmpy2 
 import imp
 gmpy2 = imp.load_dynamic('gmpy2', '/opt/anaconda/lib/python2.7/site-packages/gmpy2.so')
 
-sys.path.append('../conf')
-from config import AggregateMicroPathConfig
-#import numpy
-#from numpy import *
+from ..conf.config import AggregateMicroPathConfig
 
 class Point () :
     def __init__(self,x,y):
         self.x = x
-        self.y = y;
+        self.y = y
 
 def ccw(A,B,C):
     return - ((C.y-A.y) * (B.x-A.x)) + ((B.y-A.y) * (C.x-A.x))
@@ -61,8 +59,7 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
   dlon = math.radians(float(lon2)-float(lon1))
   a = float(math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2))
   c = float(2 * math.atan2(math.sqrt(a), math.sqrt(1-a)))
-  d = float(R * c)
-  return d
+  return float(R * c)
 
 
 def betweenpts(A1,A2,Q,threshold=0.0000001):
@@ -70,9 +67,7 @@ def betweenpts(A1,A2,Q,threshold=0.0000001):
     compAxMax = gmpy2.mpfr(max(A1.x,A2.x) + gmpy2.mpfr(threshold));
     compAyMin = gmpy2.mpfr(min(A1.y,A2.y) - gmpy2.mpfr(threshold));
     compAyMax = gmpy2.mpfr(max(A1.y,A2.y) + gmpy2.mpfr(threshold));
-    if compAxMin <= Q.x <= compAxMax and compAyMin <= Q.y <= compAyMax:
-        return True
-    return False
+    return compAxMin <= Q.x <= compAxMax and compAyMin <= Q.y <= compAyMax
 
 def intersect_gmpy (A,B,C,D):
     acd = ccw(A,C,D)
@@ -145,23 +140,17 @@ def intersect(a1,a2,b1,b2):
     swap = 0
     if a1[0] == a2[0]:
         (a1, a2, b1, b2, swap) = (b1, b2, a1, a2, 1)
-        if a1[0] == a2[0]:
-            return (0,0,0)
+    if a1[0] == a2[0]:
+        return (0,0,0)
     if b1[0] == b2[0]:
         slopea = (a2[1]-a1[1]) / (a2[0]-a1[0])
         inty = a1[1] + (b1[0]-a1[0])*slopea
         if min(a1[0],a2[0]) <= b1[0] <= max(a1[0],a2[0]) and\
           min(b1[1],b2[1]) <= inty <= max(b1[1],b2[1]):
-            if swap:
-                if b2[1] > b1[1]:
-                    return (b1[0],inty,1)
-                else:
-                    return (b1[0],inty,-1)
+            if swap and b2[1] > b1[1] or not swap and a2[0] > a1[0]:
+                return (b1[0],inty,1)
             else:
-                if a2[0] > a1[0]:
-                    return (b1[0],inty,1)
-                else:
-                    return (b1[0],inty,-1)
+                return (b1[0],inty,-1)
         return (0,0,0)
     slopea = (a2[1] -a1[1]) / (a2[0] -a1[0])
     slopeb = (b2[1] -b1[1]) / (b2[0] -b1[0])
@@ -169,7 +158,7 @@ def intersect(a1,a2,b1,b2):
         return (0,0,0)
     inta = a1[1] - a1[0]*slopea
     intb = b1[1] - b1[0]*slopeb
-    
+
     intx = (intb - inta)/(slopea - slopeb)
     inty = slopea * intx + inta
 
@@ -320,7 +309,7 @@ for line in sys.stdin:
       finalDate = temporalSplit(dt, configuration.temporal_split)
       out = [intersectX,intersectY,finalDate,vel,direction,track_id]
       out = map(lambda x: str(x),out)
-      print "\t".join(out)   
+      print("\t".join(out))
   
     #Start iterating over the longitudes (vertical triplines)
     #these two calls give us the max and min tripline indexes
@@ -360,6 +349,6 @@ for line in sys.stdin:
       finalDate = temporalSplit(dt, configuration.temporal_split)
       out = [intersectX,intersectY,finalDate,vel,direction,track_id]
       out = map(lambda x: str(x),out)
-      print "\t".join(out)
+      print("\t".join(out))
 #stoptime = time()-starttime
 #print(stoptime)
