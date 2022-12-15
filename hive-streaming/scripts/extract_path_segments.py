@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import sys
 import datetime
 from datetime import datetime
 import math
-sys.path.append('./') 
-from config import AggregateMicroPathConfig
+#sys.path.append('./') 
+from ..conf.config import AggregateMicroPathConfig
 
 current_user = None
 prevtime = None
@@ -55,19 +56,14 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
   dlon = math.radians(float(lon2)-float(lon1))
   a = float(math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2))
   c = float(2 * math.atan2(math.sqrt(a), math.sqrt(1-a)))
-  d = float(R * c)
-  return d
+  return float(R * c)
 
 def dateStrptime(dt):
-    try:
-        return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
-    except ValueError:
-        pass
-    try:
-        return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
-    except ValueError:
-        pass
-    return None
+  with contextlib.suppress(ValueError):
+      return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+  with contextlib.suppress(ValueError):
+      return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+  return None
 
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
@@ -81,7 +77,7 @@ for line in sys.stdin:
     dt_parse = dateStrptime(dt)
     if not dt_parse:
         continue
-  except:
+  except ValueError:  # Guessing here, didn't like bare except.
       continue
 
   if current_user is None or current_user != user_id:
@@ -103,7 +99,7 @@ for line in sys.stdin:
     aln = float(aln)
     blt = float(blt)
     bln = float(bln)
-  except:
+  except ValueError:  # again, avoiding bare except, just guessing
     continue
 
   distance = computeDistanceKM(alt, aln, blt, bln)
@@ -138,7 +134,7 @@ for line in sys.stdin:
       segment.append(str(distance/(total_time/3600)))
     
 
-    print "\t".join(segment)
+    print("\t".join(segment))
      
   prevline = (user_id, dt_parse, lat, lon)             
          

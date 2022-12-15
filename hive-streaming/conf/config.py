@@ -13,11 +13,7 @@
 # limitations under the License.
 
 import math
-import six
-if six.PY2
-    from ConfigParser import SafeConfigParser
-else
-    from configparser import SafeConfigParser
+from configparser import SafeConfigParser
 
 class AggregateMicroPathConfig:
     

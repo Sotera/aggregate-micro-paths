@@ -1,6 +1,11 @@
 
-Sotera Defense Solutions Inc. Aggregate Micro Paths
-Copyright 2016 Sotera Defense Solutions Inc.
+Jacobs Aggregate Micro Paths
+Copyright (c) 2016-2021 Jacobs Inc.
 
 This product includes software developed at
-Sotera Defense Solutions Inc. (http://www.soteradefense.com).
+Sotera Defense Solutions Inc. (https://www.soteradefense.com),
+acquired by KeyW Inc. (https://www.keywcorp.com),
+acquired by Jacobs Inc (https://www.jacobs.com).
+
+It incorporates Docker configurations from Panov Vadim and released under the MIT License.
+See "LICENSE - panovv" and "README - panovv.md".

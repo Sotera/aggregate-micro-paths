@@ -19,8 +19,7 @@ from optparse import OptionParser
 import sys
 
 #Add the conf path to our path so we can call the blanketconfig 
-sys.path.append('conf')
-from config import AggregateMicroPathConfig
+from conf.config import AggregateMicroPathConfig
 
 #Differences are the sort order and the table schema for creation
 #
@@ -28,9 +27,9 @@ from config import AggregateMicroPathConfig
 #
 def subprocessCall(argsList,quitOnError=True,stdout=None):
   returnCode = subprocess.call(argsList,stdout=stdout)
-  if (quitOnError and 0 != returnCode):
-    print "Error executing subprocess:\n"
-    print " ".join(argsList)
+  if quitOnError and returnCode != 0:
+    print("Error executing subprocess:\n")
+    print(" ".join(argsList))
     exit(1)
   return returnCode
 

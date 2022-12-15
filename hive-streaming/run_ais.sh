@@ -14,11 +14,13 @@
 
 database=$(sed -n 's/.*database_name *: *\([^ ]*.*\)/\1/p' < ./conf/ais.ini)
 
+echo "Using '${database}' for database."
+
 # Prepare data in HDFS and Hive table
-hadoop fs -rm /tmp/ais_smallone/*
-hadoop fs -rmdir /tmp/ais_smallone
+hadoop fs -rm -f /tmp/ais_smallone/*
+hadoop fs -rmdir -f /tmp/ais_smallone
 hadoop fs -mkdir /tmp/ais_smallone
-gzip -d aisShipData.csv.gz
+[ -e aisShipData.csv.gz ] && gzip -d aisShipData.csv.gz
 hadoop fs -put aisShipData.csv /tmp/ais_smallone/
 hive --hiveconf database=${database} -f etl.sql
 
@@ -26,10 +28,10 @@ hive --hiveconf database=${database} -f etl.sql
 mkdir -p output
 rm -f output/micro_path_ais_results.csv
 
+
 # Run Job
 python AggregateMicroPath.py -c ais.ini
 
 # Get Results
 echo -e "latitude\tlongitude\tcount\tdate" > output/micro_path_ais_results.csv
 hive -S -e "select * from ${database}.micro_path_intersect_counts_ais_small_final;" >> output/micro_path_ais_results.csv
-
