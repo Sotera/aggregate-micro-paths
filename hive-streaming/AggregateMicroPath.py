@@ -29,8 +29,8 @@ def subprocessCall(argsList,quitOnError=True,stdout=None):
   returnCode = subprocess.call(argsList,stdout=stdout)
   if quitOnError and returnCode != 0:
         print("Error executing subprocess:\n")
-    print(" ".join(argsList))
-    exit(1)
+        print(" ".join(argsList))
+        exit(1)
   return returnCode
 
 #
