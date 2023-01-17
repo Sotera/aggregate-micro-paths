@@ -19,7 +19,7 @@ from optparse import OptionParser
 import sys
 
 #Add the conf path to our path so we can call the blanketconfig 
-from conf.config import AggregateMicroPathConfig
+from conf.config import AggregateMicroPathConfig as AMP_Config
 
 #Differences are the sort order and the table schema for creation
 #
@@ -198,32 +198,32 @@ def aggregate_intersection_direction(configuration):
 #
 # 
 #
-def main(config_file):
+def main(config_file, base_dir="conf/"):
  
   print(f'Start time: {strftime("%d %b %Y %H:%M:%S", localtime())}')
   start_time = time() # Higher precision
   print(f"Loading config from conf/[{config_file}]")
-  configuration = AggregateMicroPathConfig(config_file, "conf/")
+  configuration = AMP_Config(config_file, base_dir)
 
 
-  print("extracting path data")
+  print("extracting path data....................")
   # create a new table and extract path data
   extract_paths(configuration)
 
   # emit points where segemnts intersect with trip line blankets
-  print("emit trip line blanket intersects")
+  print("emit trip line blanket intersects....................")
   extract_trip_line_intersects(configuration)
 
   # aggregate intersection points
-  print ("aggregate intersection points")
+  print ("aggregate intersection points....................")
   aggregate_intersection_points(configuration)
 
   # aggregate intersection velocity
-  print ("aggregate intersection velocity")
+  print ("aggregate intersection velocity....................")
   aggregate_intersection_velocity(configuration)
 
   # aggregate intersection vdirection
-  print ("aggregate intersection direction")
+  print ("aggregate intersection direction....................")
   aggregate_intersection_direction(configuration)
 
   Δt_s = (time() - start_time)
@@ -238,8 +238,6 @@ if __name__ == "__main__":
   parser.add_option("-c","--config",
                        dest="configFile",
                        help="REQUIRED: name of configuration file")
-
-  
 
   (options,args) = parser.parse_args()
 

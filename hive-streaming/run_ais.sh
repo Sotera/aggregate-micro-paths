@@ -12,26 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Define names
 database=$(sed -n 's/.*database_name *: *\([^ ]*.*\)/\1/p' < ./conf/ais.ini)
+out_dir=output
+output=${out_dir}/micro_path_ais_results.csv
+counts_table=micro_path_intersect_counts_ais_small_final
 
 echo "Using '${database}' for database."
 
-# Prepare data in HDFS and Hive table
+echo "Prepare data in HDFS...."
 hadoop fs -rm -f /tmp/ais_smallone/*
-hadoop fs -rmdir -f /tmp/ais_smallone
+hadoop fs -rmdir /tmp/ais_smallone
 hadoop fs -mkdir /tmp/ais_smallone
-[ -e aisShipData.csv.gz ] && gzip -d aisShipData.csv.gz
+[ -e aisShipData.csv.gz ] && [ -z aisShipData.csv ] && gzip -d aisShipData.csv.gz
 hadoop fs -put aisShipData.csv /tmp/ais_smallone/
+
+echo "Create HIVE table in ${database}..."
 hive --hiveconf database=${database} -f etl.sql
 
-# Create output directory, remove old output
-mkdir -p output
-rm -f output/micro_path_ais_results.csv
+echo "Create output directory, remove old output."
+mkdir -p ${out_dir}
+rm -f ${output}
 
 
-# Run Job
+echo "**** Run Job ****"
 python AggregateMicroPath.py -c ais.ini
 
-# Get Results
-echo -e "latitude\tlongitude\tcount\tdate" > output/micro_path_ais_results.csv
-hive -S -e "select * from ${database}.micro_path_intersect_counts_ais_small_final;" >> output/micro_path_ais_results.csv
+echo "**** Get Results ****"
+echo -e "latitude\tlongitude\tcount\tdate" > ${output}
+hive -S -e "select * from ${database}.${counts_table};" >> ${output}

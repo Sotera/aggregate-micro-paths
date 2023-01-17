@@ -1,4 +1,14 @@
+-- etl.sql
+-- ETL script for aggregated-micro-paths example
+-- Database: ${hiveconf:database}
+-- Tables: ais_small and ais_small_final
+-- 
+
+create database if not exists ${hiveconf:database}; 
 use ${hiveconf:database};
+-- Should read input table (ais_small) and 
+-- output table ais_small_final from config!
+
 drop table ais_small;
 create external table ais_small
 (
