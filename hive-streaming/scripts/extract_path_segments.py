@@ -17,6 +17,10 @@ import sys
 import datetime
 import math
 from pathlib import Path
+import logging
+
+logging.basicConfig(filename="extract_path_segments.log", level=logging.DEBUG)
+logging.debug("Running extract_path_segments.py")
 
 # This import works when running in the hive query created in AggregateMicroPaths.py.
 try:
@@ -28,24 +32,13 @@ except ImportError:
     print("If running from bash try piping appropriate tab-separated output to:")
     print("          python -m scripts.extract_path_segments.py conf/ais.ini")
 
-current_user = None
-prevtime = None
-prevline = None
-hash_latlon = None
-dt_parse = None
 
-#
-# print usage to command line and exit
-#
 def printUsageAndExit(parser):
     parser.print_help()
 
 
-#
-# modify a pair of lat or lon coordinates to correctly
-# calcuate the shortest distance between them.
-#
 def wrapDistances(d1, d2):
+    """Modify pair of lat or lon coords to correctly calc shortest distance btw them."""
     if d1 < -90 and d2 > 90:
         d2 = d2 - 360
     elif d2 < -90 and d1 > 90:
@@ -53,102 +46,118 @@ def wrapDistances(d1, d2):
     return (d1, d2)
 
 
-# compute the distance (in kilometers) between two points in lat / Ion
-# this method makes use of the haversine formula of computing distance
 def computeDistanceKM(lat1, lon1, lat2, lon2):
-    """Computes distance in km from latlon1 to latlon2."""
-    R, sin, cos, radians = 6371, math.sin, math.cos, math.radians
+    """Computes haversine distance in km from latlon1 to latlon2."""
+    R = 6371
+    sin, cos, radians = math.sin, math.cos, math.radians
     (lat1, lat2) = wrapDistances(lat1, lat2)
     (lon1, lon2) = wrapDistances(lon1, lon2)
-    dlat = radians(float(lat2) - float(lat1))
-    dlon = radians(float(lon2) - float(lon1))
-    a = sin(dlat / 2) * sin(dlat / 2) + cos(radians(lat1)) * cos(radians(lat2)) * sin(
-        dlon / 2
-    ) * sin(dlon / 2)
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
 
-def dateStrptime(dt):
-    with contextlib.suppress(ValueError):
-        return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+def main():
+    """Because "if __name__" is called on import so can only call funcs defined above."""
+    parse_stdin()
+
+
+if __name__ == "__main__":
+    logging.debug(f"argv: {sys.argv}")
+    configuration = AggregateMicroPathConfig(sys.argv.pop())
+    main()
+
+
+def parse_stdin():
+
+    current_user = prevline = hash_latlon = dt_parse = None
+
+    for i, line in enumerate(sys.stdin):
+        logging.debug(f"{line:8d}: {line}")
+
+        (user_id, dt, lat, lon) = parse_line(line)
+        logging.debug(f"user: {user_id}; dt: {dt}; lat: {lat}; lon: {lon}")
+
+        dt_parse = parse_date(dt)
+        if not dt_parse:
+            continue
+
+        # If user_id changes, update prevline etc. and read next line.
+        if user_has_changed(current_user, user_id):
+            current_user = user_id
+            prevline = (user_id, dt_parse, lat, lon)
+            hash_latlon = {}
+            continue
+
+        delta = dt_parse - prevline[1]
+        total_time = float(delta.days * 24 * 60 * 60 + delta.seconds)
+        # if too much time had passed... then skip the line
+        if total_time > configuration.time_filter:
+            continue
+
+        (auid, adt, alt, aln) = prevline
+        (buid, bdt, blt, bln) = (user_id, dt_parse, lat, lon)
+        try:
+            alt = float(alt)
+            aln = float(aln)
+            blt = float(blt)
+            bln = float(bln)
+        except Exception as err:
+            print(f"*** EXCEPTION after float() block in ${__file__} ***")
+            print(f"*** -> {err=}, {type(err)=} ***")
+            continue
+
+        distance = computeDistanceKM(alt, aln, blt, bln)
+
+        # if the distance was too large, skip the segment
+        if distance > configuration.distance_filter:
+            continue
+
+        # calculate km / hr   (TODO??? Was there supposed to be a velocity filter here?  -crt)
+
+        latitude_diff = abs(alt - blt)
+        longitude_diff = abs(aln - bln)
+
+        if latitude_diff + longitude_diff > 0:
+            # We actually went somewhere and didn't stay stationary
+            hash_latlon[f"{alt}, {aln}, {blt}, {bln}"] = 1
+            segment = [user_id, alt, blt, aln, bln, adt, bdt, total_time, distance, -1]
+            if total_time != 0:
+                segment[-1] = distance / (total_time / 3600)
+            segment = (str(x) for x in segment)
+
+            logging.debug("\t".join(segment))
+
+        prevline = (user_id, dt_parse, lat, lon)
+
+
+def parse_line(line: str) -> tuple:
+    """Remove quotes, split on tabs, strip"""
+    return (x.strip() for x in line.replace('"', "").split("\t"))  # remove quotes
+    # (user_id, dt, lat, lon) = line.strip().split("\t")
+    # (user_id, dt, lat, lon) = map(lambda x: x.strip(), line.split("\t"))
+
+
+def parse_date(dt: str) -> datetime.datetime:
+    """Return parsed date - after splitting on ".".  (Return None if parse fails.)"""
+    try:
+        return dateStrptime(dt.split(".")[0])
+    except Exception as err:
+        logging.error(f"*** EXCEPTION after dt_parse in ${__file__} ***")
+        logging.error(f"*** -> {err=}, {type(err)=} ***")
+        return None
+
+
+def dateStrptime(dt: str) -> datetime.datetime:
     with contextlib.suppress(ValueError):
         return datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
     return None
 
 
-configuration = AggregateMicroPathConfig(sys.argv.pop())
-for line in sys.stdin:
-    line = line.replace('"', "")  # remove quotes
-    # print line+"\n"
-
-    # (user_id, dt, lat, lon) = line.strip().split("\t")
-    (user_id, dt, lat, lon) = map(lambda x: x.strip(), line.split("\t"))
-    try:
-        dt = dt.split(".")[0]
-        dt_parse = dateStrptime(dt)
-        if not dt_parse:
-            continue
-    except Exception as err:
-        print(f"*** EXCEPTION after dt_parse in ${__file__} ***")
-        print(f"*** -> {err=}, {type(err)=} ***")
-        continue
-
-    if current_user is None or current_user != user_id:
-        current_user = user_id
-        prevtime = dt_parse
-        prevline = (user_id, dt_parse, lat, lon)
-        hash_latlon = {}
-        continue
-    delta = dt_parse - prevline[1]
-    total_time = float(delta.days * 24 * 60 * 60 + delta.seconds)
-    # if too much time had passed... then skip the line
-    if total_time > configuration.time_filter:
-        continue
-    (auid, adt, alt, aln) = prevline
-    (buid, bdt, blt, bln) = (user_id, dt_parse, lat, lon)
-
-    try:
-        alt = float(alt)
-        aln = float(aln)
-        blt = float(blt)
-        bln = float(bln)
-    except Exception as err:
-        print(f"*** EXCEPTION after float() block in ${__file__} ***")
-        print(f"*** -> {err=}, {type(err)=} ***")
-        continue
-
-    distance = computeDistanceKM(alt, aln, blt, bln)
-
-    # if the distance was too large, skip the segment
-    if distance > configuration.distance_filter:
-        continue
-
-    # calculate km / hr
-
-    latitude_diff = abs(float(alt) - float(blt))
-    longitude_diff = abs(float(aln) - float(bln))
-
-    # Make sure we actually went somewhere and didn't stay stationary
-    if latitude_diff + longitude_diff > 0:
-
-        hash_latlon[str(alt) + "," + str(aln) + "," + str(blt) + "," + str(bln)] = 1
-        segment = []
-        segment.append(user_id)
-        segment.append(str(alt))
-        segment.append(str(blt))
-        segment.append(str(aln))
-        segment.append(str(bln))
-        segment.append(str(adt))
-        segment.append(str(bdt))
-        segment.append(str(total_time))
-        segment.append(str(distance))
-
-        if total_time == 0:
-            segment.append("-1")
-        else:
-            segment.append(str(distance / (total_time / 3600)))
-
-        print("\t".join(segment))
-
-    prevline = (user_id, dt_parse, lat, lon)
+def user_has_changed(current_user, user_id):
+    return current_user is None or current_user != user_id
