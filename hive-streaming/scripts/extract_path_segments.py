@@ -19,7 +19,9 @@ import math
 from pathlib import Path
 import logging
 
-logging.basicConfig(filename="extract_path_segments.log", level=logging.DEBUG)
+curdir = Path(__file__).parent
+logfilename = curdir / "extract_path_segments.log"
+logging.basicConfig(filename=logfilename, level=logging.DEBUG)
 logging.debug("Running extract_path_segments.py")
 
 # This import works when running in the hive query created in AggregateMicroPaths.py.
