@@ -127,24 +127,24 @@ for line in sys.stdin:
 
     # calculate km / hr
 
-    latitude_diff = abs(float(alt) - float(blt))
-    longitude_diff = abs(float(aln) - float(bln))
+    latitude_diff = abs(alt - blt)
+    longitude_diff = abs(aln - bln)
 
     # Make sure we actually went somewhere and didn't stay stationary
     if latitude_diff + longitude_diff > 0:
 
-        hash_latlon[str(alt) + "," + str(aln) + "," + str(blt) + "," + str(bln)] = 1
-        segment = []
-        segment.append(user_id)
-        segment.append(str(alt))
-        segment.append(str(blt))
-        segment.append(str(aln))
-        segment.append(str(bln))
-        segment.append(str(adt))
-        segment.append(str(bdt))
-        segment.append(str(total_time))
-        segment.append(str(distance))
-
+        hash_latlon[f"{alt},{aln},{blt},{bln}"] = 1
+        segment = [
+            user_id,
+            str(alt),
+            str(blt),
+            str(aln),
+            str(bln),
+            str(adt),
+            str(bdt),
+            str(total_time),
+            str(distance),
+        ]
         if total_time == 0:
             segment.append("-1")
         else:
