@@ -19,7 +19,7 @@ from optparse import OptionParser
 import sys
 
 #Add the conf path to our path so we can call the blanketconfig 
-from conf.config import AggregateMicroPathConfig
+from scripts.config import AggregateMicroPathConfig as AMP_Config
 
 #Differences are the sort order and the table schema for creation
 #
@@ -29,8 +29,8 @@ def subprocessCall(argsList,quitOnError=True,stdout=None):
   returnCode = subprocess.call(argsList,stdout=stdout)
   if quitOnError and returnCode != 0:
         print("Error executing subprocess:\n")
-        print(" ".join(argsList))
-        exit(1)
+    print(" ".join(argsList))
+    exit(1)
   return returnCode
 
 #
@@ -57,7 +57,11 @@ def create_new_hive_table(database_name,table_name,table_schema):
 #
 def extract_paths(conf):
   table_schema = "id string, alat string, blat string, alon string, blon string, adt string, bdt string, time string, distance string, velocity string"
-  create_new_hive_table(conf.database_name,"micro_path_track_extract_" + conf.table_name,table_schema)
+  create_new_hive_table(
+      conf.database_name,
+      f"micro_path_track_extract_{conf.table_name}",
+      table_schema,
+  )
 
 
 
@@ -88,9 +92,13 @@ def extract_paths(conf):
 #
 def extract_trip_line_intersects(configuration):
   table_schema = "intersectX string, intersectY string, dt string, velocity float, direction float, track_id string"
-  create_new_hive_table(configuration.database_name,"micro_path_tripline_bins_" + configuration.table_name,table_schema)
-  
-  
+  create_new_hive_table(
+      configuration.database_name,
+      f"micro_path_tripline_bins_{configuration.table_name}",
+      table_schema,
+  )
+
+
   #hadoop streaming to extract paths
   hql_script = """
 
@@ -106,7 +114,7 @@ def extract_trip_line_intersects(configuration):
     ;   
     """
   print("***hql_script***")
-  print(str(hql_script))
+  print(hql_script)
   subprocessCall(["hive","-e",hql_script]) 
   
 #
@@ -114,7 +122,11 @@ def extract_trip_line_intersects(configuration):
 #
 def aggregate_intersection_list(configuration):
   table_schema ="x string, y string, ids string, dt string"
-  create_new_hive_table(configuration.database_name,"micro_path_intersect_list_" + configuration.table_name,table_schema)
+  create_new_hive_table(
+      configuration.database_name,
+      f"micro_path_intersect_list_{configuration.table_name}",
+      table_schema,
+  )
 
   #hadoop streaming to extract paths
   hql_script = """
@@ -146,7 +158,11 @@ def aggregate_intersection_list(configuration):
 #
 def aggregate_intersection_points(configuration):
   table_schema ="x string, y string, value int, dt string"
-  create_new_hive_table(configuration.database_name,"micro_path_intersect_counts_" + configuration.table_name,table_schema)
+  create_new_hive_table(
+      configuration.database_name,
+      f"micro_path_intersect_counts_{configuration.table_name}",
+      table_schema,
+  )
 
   #hadoop streaming to extract paths
   hql_script = """
@@ -163,7 +179,11 @@ def aggregate_intersection_points(configuration):
   
 def aggregate_intersection_velocity(configuration):
   table_schema ="x string, y string, velocity float, dt string"
-  create_new_hive_table(configuration.database_name,"micro_path_intersect_velocity_" + configuration.table_name,table_schema)
+  create_new_hive_table(
+      configuration.database_name,
+      f"micro_path_intersect_velocity_{configuration.table_name}",
+      table_schema,
+  )
 
   #hadoop streaming to extract paths
   hql_script = """
@@ -180,7 +200,11 @@ def aggregate_intersection_velocity(configuration):
                     
 def aggregate_intersection_direction(configuration):
   table_schema ="x string, y string, direction int, dt string"
-  create_new_hive_table(configuration.database_name,"micro_path_intersect_direction_" + configuration.table_name,table_schema)
+  create_new_hive_table(
+      configuration.database_name,
+      f"micro_path_intersect_direction_{configuration.table_name}",
+      table_schema,
+  )
 
   #hadoop streaming to extract paths
   hql_script = """
@@ -198,32 +222,32 @@ def aggregate_intersection_direction(configuration):
 #
 # 
 #
-def main(config_file):
+def main(config_file, base_dir="conf/"):
  
   print(f'Start time: {strftime("%d %b %Y %H:%M:%S", localtime())}')
   start_time = time() # Higher precision
   print(f"Loading config from conf/[{config_file}]")
-  configuration = AggregateMicroPathConfig(config_file, "conf/")
+  configuration = AMP_Config(config_file, base_dir)
 
 
-  print("extracting path data")
+  print("extracting path data....................")
   # create a new table and extract path data
   extract_paths(configuration)
 
   # emit points where segemnts intersect with trip line blankets
-  print("emit trip line blanket intersects")
+  print("emit trip line blanket intersects....................")
   extract_trip_line_intersects(configuration)
 
   # aggregate intersection points
-  print ("aggregate intersection points")
+  print ("aggregate intersection points....................")
   aggregate_intersection_points(configuration)
 
   # aggregate intersection velocity
-  print ("aggregate intersection velocity")
+  print ("aggregate intersection velocity....................")
   aggregate_intersection_velocity(configuration)
 
   # aggregate intersection vdirection
-  print ("aggregate intersection direction")
+  print ("aggregate intersection direction....................")
   aggregate_intersection_direction(configuration)
 
   Δt_s = (time() - start_time)
@@ -238,8 +262,6 @@ if __name__ == "__main__":
   parser.add_option("-c","--config",
                        dest="configFile",
                        help="REQUIRED: name of configuration file")
-
-  
 
   (options,args) = parser.parse_args()
 
