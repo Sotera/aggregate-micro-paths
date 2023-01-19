@@ -28,11 +28,11 @@ from scripts.config import AggregateMicroPathConfig as AMP_Config
 def subprocessCall(argsList,quitOnError=True,stdout=None):
   returnCode = subprocess.call(argsList,stdout=stdout)
   if quitOnError and returnCode != 0:
-        print("Error executing subprocess:\n")
+    print("Error executing subprocess:\n")
     print(" ".join(argsList))
     exit(1)
   return returnCode
-
+  
 #
 # print usage to command line and exit
 #
