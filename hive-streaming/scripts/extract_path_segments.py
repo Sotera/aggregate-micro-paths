@@ -24,14 +24,13 @@ logfilename = curdir / "extract_path_segments.log"
 logging.basicConfig(filename=logfilename, level=logging.WARNING)
 logging.debug("Running extract_path_segments.py")
 
-# This import works when running in the hive query created in AggregateMicroPaths.py.
 try:
     from config import AggregateMicroPathConfig
 except ImportError as err:
-    print(
-        ">>> Failed to import AggregateMicroPathConfig from config.py\n"
-        ">>> Try: 'python extract_path_segments.py ais.ini' from scripts/. Or\n"
-        ">>> Try: 'python -m scripts.extract_path_segments.py conf/ais.ini' from parent dir."
+    logging.error(f"""
+        Failed to import AggregateMicroPathConfig from config.py. Check it's in 
+        this folder ({curdir}). Other locations will cause differences between 
+        hive execution and local bash execution."""
         )
     raise(err)
 
