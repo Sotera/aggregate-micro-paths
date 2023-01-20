@@ -64,12 +64,8 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
     return R * c
 
 
-def main():
-    """Because "if __name__" is called on import so can only call funcs defined above."""
-    parse_stdin()
-
-
 def parse_stdin():
+    """The main function."""
 
     current_user = prevline = hash_latlon = dt_parse = None
 
@@ -164,4 +160,4 @@ def user_has_changed(current_user, user_id):
 if __name__ == "__main__":
     logging.debug(f"argv: {sys.argv}")
     configuration = AggregateMicroPathConfig(sys.argv.pop())
-    main()
+    parse_stdin()
