@@ -32,7 +32,7 @@ def subprocessCall(argsList,quitOnError=True,stdout=None):
     print(" ".join(argsList))
     exit(1)
   return returnCode
-
+  
 #
 # print usage to command line and exit
 #
@@ -70,7 +70,7 @@ def extract_paths(conf):
     set mapred.reduce.tasks=96;
     set mapred.map.tasks=96;
    
-    ADD FILES conf/config.py conf/"""+conf.config_file+""" scripts/extract_path_segments.py;
+    ADD FILES scripts/config.py conf/"""+conf.config_file+""" scripts/extract_path_segments.py;
     FROM(
         SELECT """+conf.table_schema_id+""","""+conf.table_schema_dt+""","""+conf.table_schema_lat+""","""+conf.table_schema_lon+""" 
         FROM """ + conf.database_name + """.""" + conf.table_name + """
@@ -222,11 +222,11 @@ def aggregate_intersection_direction(configuration):
 #
 # 
 #
-def main(config_file, base_dir="conf/"):
+def main(config_file, base_dir="./"):
  
   print(f'Start time: {strftime("%d %b %Y %H:%M:%S", localtime())}')
   start_time = time() # Higher precision
-  print(f"Loading config from conf/[{config_file}]")
+  print(f"Loading config from {base_dir}/{config_file}")
   configuration = AMP_Config(config_file, base_dir)
 
 

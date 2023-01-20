@@ -165,4 +165,5 @@ cython_debug/
 # Don't add output or gunzip results.
 hive-streaming/*.csv
 *output/
+hive-streaming/scripts/000000_0
 hive-streaming/000000_0
