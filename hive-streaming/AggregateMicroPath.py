@@ -23,233 +23,6 @@ logging.basicConfig(level=logging.WARNING)
 from scripts.config import AggregateMicroPathConfig as AMP_Config
 
 
-def subprocessCall(argsList, quitOnError=True, stdout=None):
-    """Call subprocess and optionally quit on errors"""
-    returnCode = subprocess.call(argsList, stdout=stdout)
-    if quitOnError and returnCode != 0:
-        logging.error("Error in subprocess:\n\t{' '.join(argsList)}")
-        exit(1)
-    return returnCode
-
-
-def printUsageAndExit(parser):
-    parser.print_help()
-    exit(1)
-
-
-def create_new_hive_table(database_name: str, table_name: str, table_schema: str) -> None:
-    hql_script = f"""DROP TABLE {database_name}.{table_name}; 
-    CREATE TABLE {database_name}.{table_name} ( {table_schema} )
-    ;"""
-    subprocessCall(["hive", "-e", hql_script])
-
-def query_hive(
-    conf: AMP_Config,    # Global shared config
-    prefix: str,         # Table prefix specific to this query
-    table_schema: str,   # Schema for our new table
-    hql_script: str      # The script to run
-    ) -> None:
-    """Create table {conf.database}.{prefix}_{conf.table_name} matching {table_schema} 
-    using {hive_query} and UDF {pyscript}."""
-    create_new_hive_table(
-        conf.database_name,
-        f"{prefix}_{conf.table_name}",
-        table_schema
-    )
-    print(f"***hql_script***\n{hql_script}")
-    subprocessCall(["hive", "-e", hql_script])
-
-def extract_paths(
-    conf: AMP_Config,
-    pyscript: str = "extract_path_segments.py",
-    prefix: str = "micro_path_track_extract_",
-) -> None:
-    """Extract paths from  conf/osm.ini initial data and store into a new table"""
-    C = conf
-    table_schema = (
-        "id string, alat string, blat string, alon string, blon string, "
-        "adt string, bdt string, time string, distance string, velocity string"
-    )
-    hql_script = f"""
-    set mapred.reduce.tasks=96; set mapred.map.tasks=96;
-    ADD FILES scripts/config.py scripts/{C.config_file} scripts/{pyscript};
-
-    FROM(
-        SELECT {C.table_schema_id}, {C.table_schema_dt}, {C.table_schema_lat}, {C.table_schema_lon}
-        FROM {C.database_name}.{C.table_name}
-        DISTRIBUTE BY {C.table_schema_id}
-        SORT BY {C.table_schema_id}, {C.table_schema_dt} asc
-    ) map_out
-
-    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
-    SELECT TRANSFORM ( 
-        map_out.{C.table_schema_id}, map_out.{C.table_schema_dt}, 
-        map_out.{C.table_schema_lat}, map_out.{C.table_schema_lon} )
-    USING \"python {pyscript} {C.config_file}\"
-    AS id,alat,blat,alon,blon,adt,bdt,time,distance,velocity
-    ;   
-    """
-    query_hive(C, prefix, table_schema, hql_script)
-
-
-def extract_trip_line_intersects(
-    conf: AMP_Config,                           # Global shared config
-    pyscript: str = "tripline_bins.py",         # UDF for this query
-    prefix: str = "micro_path_tripline_bins"    # Prefix for this query
-    ) -> None:
-    """Extract trip line intersects from paths"""
-    C = conf
-    table_schema = (
-        "intersectX string, intersectY string, dt string, velocity float, "
-        "direction float, track_id string"
-    )
-    hql_script = f"""
-    ADD FILES scripts/config.py scripts/{C.config_file} scripts/{pyscript};
-
-    FROM {C.database_name}.micro_path_track_extract_{C.table_name}
-    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
-    SELECT TRANSFORM ( alat, alon, blat, blon, adt, bdt, velocity, id )
-    USING \"python {pyscript} {C.config_file}\"
-    AS intersectX,intersectY,dt,velocity,direction,track_id
-    ;   
-    """
-    query_hive(C, prefix, table_schema, hql_script)
-
-
-def aggregate_intersection_list(
-    conf: AMP_Config,                           # Global shared config
-    pyscript: str = "tripline_bins.py",         # UDF for this query
-    prefix: str = "micro_path_intsersect_list"  # Prefix for this query
-    ) -> None:
-    """Take values form micro_path_tripline_bins and aggregate the counts"""
-    "TODO: What the heck is "#YourTable" in the query below???"
-    C = conf
-    table_schema = "x string, y string, ids string, dt string"
-    hql_script = (f"""
-    set mapred.reduce.tasks=96; set mapred.map.tasks=96;    
-    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
-    SELECT 
-      intersectX,intersectY,dt
-      STUFF((
-        SELECT ', ' + [Name] + ':' + CAST([Value] AS VARCHAR(MAX)) 
-        FROM #YourTable 
-        WHERE (ID = Results.ID) 
-        FOR XML PATH(''),TYPE).value('(./text())[1]','VARCHAR(MAX)')
-      ,1,2,'') AS ids
-    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
-    GROUP BY intersectX,intersectY,dt
-    
-    SELECT intersectX,intersectY,ids,dt
-    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
-    GROUP BY intersectX,intersectY,dt
-    ;   
-    """
-    )
-    query_hive(C, prefix, table_schema, hql_script)
-
-
-#
-# take values form micro_path_tripline_bins and aggregate the counts
-#
-def aggregate_intersection_points(configuration):
-    table_schema = "x string, y string, value int, dt string"
-    create_new_hive_table(
-        configuration.database_name,
-        f"micro_path_intersect_counts_{configuration.table_name}",
-        table_schema,
-    )
-
-    # hadoop streaming to extract paths
-    hql_script = (
-        """
-    set mapred.map.tasks=96;
-    set mapred.reduce.tasks=96;
-    
-    INSERT OVERWRITE TABLE """
-        + configuration.database_name
-        + """.micro_path_intersect_counts_"""
-        + configuration.table_name
-        + """
-    SELECT intersectX,intersectY,count(1),dt
-    FROM """
-        + configuration.database_name
-        + """.micro_path_tripline_bins_"""
-        + configuration.table_name
-        + """
-    GROUP BY intersectX,intersectY,dt
-    ;   
-    """
-    )
-    subprocessCall(["hive", "-e", hql_script])
-
-
-def aggregate_intersection_velocity(configuration):
-    table_schema = "x string, y string, velocity float, dt string"
-    create_new_hive_table(
-        configuration.database_name,
-        f"micro_path_intersect_velocity_{configuration.table_name}",
-        table_schema,
-    )
-
-    # hadoop streaming to extract paths
-    hql_script = (
-        """
-    set mapred.map.tasks=96;
-    set mapred.reduce.tasks=96;
-    
-    INSERT OVERWRITE TABLE """
-        + configuration.database_name
-        + """.micro_path_intersect_velocity_"""
-        + configuration.table_name
-        + """
-    SELECT intersectX,intersectY,avg(velocity),dt
-    FROM """
-        + configuration.database_name
-        + """.micro_path_tripline_bins_"""
-        + configuration.table_name
-        + """
-    GROUP BY intersectX,intersectY,dt
-    ;   
-    """
-    )
-    subprocessCall(["hive", "-e", hql_script])
-
-
-def aggregate_intersection_direction(configuration):
-    table_schema = "x string, y string, direction int, dt string"
-    create_new_hive_table(
-        configuration.database_name,
-        f"micro_path_intersect_direction_{configuration.table_name}",
-        table_schema,
-    )
-
-    # hadoop streaming to extract paths
-    hql_script = (
-        """
-    set mapred.map.tasks=96;
-    set mapred.reduce.tasks=96;
-    
-    INSERT OVERWRITE TABLE """
-        + configuration.database_name
-        + """.micro_path_intersect_direction_"""
-        + configuration.table_name
-        + """
-    SELECT intersectX,intersectY,avg(direction),dt
-    FROM """
-        + configuration.database_name
-        + """.micro_path_tripline_bins_"""
-        + configuration.table_name
-        + """
-    GROUP BY intersectX,intersectY,dt
-    ;   
-    """
-    )
-    subprocessCall(["hive", "-e", hql_script])
-
-
-#
-#
-#
 def main(config_file, base_dir="./"):
 
     print(f'Start time: {strftime("%d %b %Y %H:%M:%S", localtime())}')
@@ -281,18 +54,207 @@ def main(config_file, base_dir="./"):
     print(f"Elapsed time: {Δt_s:.3f}s")
 
 
-#
-# Process command line arguments and run main
-#
-if __name__ == "__main__":
+def extract_paths(
+    C: AMP_Config,  # Global shared config
+    pyscript: str = "extract_path_segments.py",  # UDF for this query
+    prefix: str = "micro_path_track_extract_",  # Prefix for this query
+) -> None:
+    """Extract paths from  conf/osm.ini initial data and store into a new table"""
+
+    table_schema = (
+        "id string, alat string, blat string, alon string, blon string, "
+        "adt string, bdt string, time string, distance string, velocity string"
+    )
+    hql_script = f"""
+    set mapred.reduce.tasks=96; set mapred.map.tasks=96;
+    ADD FILES scripts/config.py scripts/{C.config_file} scripts/{pyscript};
+
+    FROM(
+        SELECT {C.table_schema_id}, {C.table_schema_dt}, {C.table_schema_lat}, {C.table_schema_lon}
+        FROM {C.database_name}.{C.table_name}
+        DISTRIBUTE BY {C.table_schema_id}
+        SORT BY {C.table_schema_id}, {C.table_schema_dt} asc
+    ) map_out
+
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
+    SELECT TRANSFORM ( 
+        map_out.{C.table_schema_id}, map_out.{C.table_schema_dt}, 
+        map_out.{C.table_schema_lat}, map_out.{C.table_schema_lon} )
+    USING \"python {pyscript} {C.config_file}\"
+    AS id,alat,blat,alon,blon,adt,bdt,time,distance,velocity
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+def extract_trip_line_intersects(
+    C: AMP_Config,  # Global shared config
+    pyscript: str = "tripline_bins.py",  # UDF for this query
+    prefix: str = "micro_path_tripline_bins",  # Prefix for this query
+) -> None:
+    """Extract trip line intersects from paths"""
+
+    table_schema = (
+        "intersectX string, intersectY string, dt string, velocity float, "
+        "direction float, track_id string"
+    )
+    hql_script = f"""
+    ADD FILES scripts/config.py scripts/{C.config_file} scripts/{pyscript};
+
+    FROM {C.database_name}.micro_path_track_extract_{C.table_name}
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
+    SELECT TRANSFORM ( alat, alon, blat, blon, adt, bdt, velocity, id )
+    USING \"python {pyscript} {C.config_file}\"
+    AS intersectX,intersectY,dt,velocity,direction,track_id
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+def aggregate_intersection_list(
+    C: AMP_Config,  # Global shared config
+    prefix: str = "micro_path_intsersect_list",  # Prefix for this query
+) -> None:
+    """Take values form micro_path_tripline_bins and aggregate the counts"""
+
+    "TODO: What the heck is "  # YourTable" in the query below???"
+    table_schema = "x string, y string, ids string, dt string"
+    hql_script = f"""
+    set mapred.reduce.tasks=96; set mapred.map.tasks=96;    
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
+    SELECT 
+      intersectX,intersectY,dt
+      STUFF((
+        SELECT ', ' + [Name] + ':' + CAST([Value] AS VARCHAR(MAX)) 
+        FROM #YourTable 
+        WHERE (ID = Results.ID) 
+        FOR XML PATH(''),TYPE).value('(./text())[1]','VARCHAR(MAX)')
+      ,1,2,'') AS ids
+    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
+    GROUP BY intersectX,intersectY,dt
+    
+    SELECT intersectX,intersectY,ids,dt
+    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+def aggregate_intersection_points(
+    C: AMP_Config,  # Global shared config
+    prefix: str = "micro_path_intsersect_counts",  # Prefix for this query
+) -> None:
+    """take values from micro_path_tripline_bins and aggregate the counts"""
+
+    table_schema = None
+    hql_script = f"""
+    set mapred.map.tasks=96; set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}.{C.table_name}
+    SELECT intersectX,intersectY,count(1),dt
+    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+def aggregate_intersection_velocity(
+    C: AMP_Config,  # Global shared config
+    prefix: str = "micro_path_intsersect_velocity",  # Prefix for this query
+) -> None:
+    """Calculate intersection velocities"""
+
+    table_schema = "x string, y string, velocity float, dt string"
+    hql_script = f"""
+    set mapred.map.tasks=96; set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
+    SELECT intersectX,intersectY,avg(velocity),dt
+    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+def aggregate_intersection_direction(
+    C: AMP_Config,  # Global shared config
+    prefix: str = "micro_path_intsersect_direction",  # Prefix for this query
+) -> None:
+
+    table_schema = "x string, y string, direction int, dt string"
+    hql_script = f"""
+    set mapred.map.tasks=96; set mapred.reduce.tasks=96;
+    
+    INSERT OVERWRITE TABLE {C.database_name}.{prefix}_{C.table_name}
+    SELECT intersectX,intersectY,avg(direction),dt
+    FROM {C.database_name}.micro_path_tripline_bins_{C.table_name}
+    GROUP BY intersectX,intersectY,dt
+    ;   
+    """
+    query_hive(C, prefix, table_schema, hql_script)
+
+
+
+def query_hive(
+    conf: AMP_Config,  # Global shared config
+    prefix: str,  # Table prefix specific to this query
+    table_schema: str,  # Schema for our new table
+    hql_script: str,  # The script to run
+) -> None:
+    """Create table {conf.database}.{prefix}_{conf.table_name} matching {table_schema}
+    using {hive_query} and UDF {pyscript}."""
+    if table_schema:
+        create_new_hive_table(conf.database_name, f"{prefix}_{conf.table_name}", table_schema)
+    print(f"***hql_script***\n{hql_script}")
+    run_and_log_hive(hql_script)
+
+def create_new_hive_table(database_name: str, table_name: str, table_schema: str) -> None:
+    hql_script = f"""DROP TABLE {database_name}.{table_name}; 
+    CREATE TABLE {database_name}.{table_name} ( {table_schema} )
+    ;"""
+    run_and_log_hive(hql_script)
+
+
+def run_and_log_hive(hql_script: str) -> None:
+    try:
+        subprocessCall(["hive", "-e", hql_script])
+    except FileNotFoundError as err:
+        logging.error("[run_and_log_hive]: Could not run hive. Check hive is installed & in PATH.")
+        exit(1)  # Tidier than raise.  Loses trace info though.
+
+
+def subprocessCall(argsList, quitOnError=True, stdout=None):
+    """Call subprocess and optionally quit on errors"""
+    returnCode = subprocess.call(argsList, stdout=stdout)
+    if quitOnError and returnCode != 0:
+        logging.error("Error in subprocess:\n\t{' '.join(argsList)}")
+        exit(1)
+    return returnCode
+
+
+def printUsageAndExit(parser):
+    parser.print_help()
+    exit(1)
+
+
+def get_opts() -> tuple:
+    """Process cmdline args. Return (options, args)."""
     parser = OptionParser()
     parser.add_option(
         "-c", "--config", dest="configFile", help="REQUIRED: name of configuration file"
     )
-
-    (options, args) = parser.parse_args()
-
+    options, args = parser.parse_args()
     if not options.configFile:
         printUsageAndExit(parser)
+    return options, args
 
+
+#
+#
+#
+if __name__ == "__main__":
+    options, args = get_opts()
     main(options.configFile)
