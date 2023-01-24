@@ -23,7 +23,7 @@ class AggregateMicroPathConfig:
 
     """
     def __init__(self, config, basePath="./"):
-        self.config_file = Path(basePath) / config
+        self.config_file = Path(basePath).resolve() / config
         self.parser = self.get_config_parser()
         self.parse_config()
 
@@ -31,10 +31,10 @@ class AggregateMicroPathConfig:
         parser = SafeConfigParser()
         parser.read(self.config_file)
         if not parser.sections():
-            logging.error("""
-                f"Config file is empty or has no sections. Check folder?
-                  -> Config File: {self.config_file}.
-                  -> Sections: {parser.sections()}"""
+            logging.error(f"""
+                Config file is empty or has no sections. Wrong folder?
+                -> Config File: {self.config_file}.
+                -> Sections: {parser.sections()}"""
                 )
         return parser
         
