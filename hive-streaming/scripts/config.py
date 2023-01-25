@@ -17,13 +17,15 @@ from configparser import SafeConfigParser
 from pathlib import Path
 import logging
 
+
 class AggregateMicroPathConfig:
     """Reads AMP config file and creates object with AMP config vars.
     TODO: Replace with toml.  Reduce boilerplate?
 
     """
+
     def __init__(self, config, basePath="./"):
-        self.config_file = Path(basePath).resolve() / config
+        self.config_file = Path(basePath) / config
         self.parser = self.get_config_parser()
         self.parse_config()
 
@@ -31,13 +33,14 @@ class AggregateMicroPathConfig:
         parser = SafeConfigParser()
         parser.read(self.config_file)
         if not parser.sections():
-            logging.error(f"""
+            logging.error(
+                f"""
                 Config file is empty or has no sections. Wrong folder?
-                -> Config File: {self.config_file}.
+                -> Config File: {self.config_file.resolve()}.
                 -> Sections: {parser.sections()}"""
-                )
+            )
         return parser
-        
+
     def parse_config(self) -> None:
         AMP = "AggregateMicroPath"
         parser = self.parser
