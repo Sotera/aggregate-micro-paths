@@ -19,7 +19,7 @@ def call_udf(udf: str = "my_udf.py") -> None:
         USING \"python {udf}\"
         AS my_id,my_date
     FROM amp_data.micro_path_temp
-    LIMIT 25
+    LIMIT 10
     ;   
     """
     run_and_log_hive(hql_script)
