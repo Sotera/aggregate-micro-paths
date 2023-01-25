@@ -20,20 +20,17 @@ import math
 from pathlib import Path
 import logging
 
-curdir = Path(__file__).parent
-logfilename = curdir / "extract_path_segments.log"
-logging.basicConfig(filename=logfilename, level=logging.WARNING)
-logging.debug("Running extract_path_segments.py")
+print("<<<<<<< EXTRACT_PATH_SEGMENTS.PY >>>>>>>>", file=sys.stderr)
 
-try:
-    from config import AggregateMicroPathConfig
-except ImportError as err:
-    logging.error(f"""
-        Failed to import AggregateMicroPathConfig from config.py. Check it's in 
-        this folder ({curdir}). Other locations will cause differences between 
-        hive execution and local bash execution."""
-        )
-    raise(err)
+curdir = Path(__file__).parent
+logging.basicConfig(level=logging.INFO)
+logging.debug(f"Running extract_path_segments.py. Curdir={curdir}.")
+
+# UDFs cannot easily import local modules. But pydoc.importfile can. So.
+from pydoc import importfile
+
+config = importfile("config.py")
+from config import AggregateMicroPathConfig
 
 
 def printUsageAndExit(parser):
@@ -48,6 +45,7 @@ def wrapDistances(d1, d2):
         d1 = d1 - 360
     return (d1, d2)
 
+
 def computeDistanceKM(lat1, lon1, lat2, lon2):
     """Computes haversine distance in km from latlon1 to latlon2."""
     R = 6371
@@ -56,10 +54,7 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
     (lon1, lon2) = wrapDistances(lon1, lon2)
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
-    a = (
-        sin(dlat / 2) ** 2
-        + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
-    )
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
@@ -160,5 +155,11 @@ def user_has_changed(current_user, user_id):
 
 if __name__ == "__main__":
     logging.debug(f"argv: {sys.argv}")
-    configuration = AggregateMicroPathConfig(sys.argv.pop())
+    config_file = sys.argv.pop()  # TODO use argparse or such
+    try:
+        configuration = AggregateMicroPathConfig(config_file)
+    except Exception:
+        basename = Path(config_file).name
+        logging.debug("Trying *{basename}* as fallback config.")
+        configuration = AggregateMicroPathConfig(basename)
     parse_stdin()
