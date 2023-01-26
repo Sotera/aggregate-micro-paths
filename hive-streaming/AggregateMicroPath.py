@@ -66,11 +66,11 @@ def extract_paths(conf):
 
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
     set mapred.reduce.tasks=96;
     set mapred.map.tasks=96;
    
-    ADD FILES scripts/config.py conf/"""+conf.config_file+""" scripts/extract_path_segments.py;
+    ADD FILES scripts/config.py scripts/{conf.config_file} scripts/extract_path_segments.py;
     FROM(
         SELECT """+conf.table_schema_id+""","""+conf.table_schema_dt+""","""+conf.table_schema_lat+""","""+conf.table_schema_lon+""" 
         FROM """ + conf.database_name + """.""" + conf.table_name + """
@@ -79,8 +79,8 @@ def extract_paths(conf):
     ) map_out
 
     INSERT OVERWRITE TABLE """ + conf.database_name + """.micro_path_track_extract_""" + conf.table_name + """
-    SELECT TRANSFORM(map_out."""+conf.table_schema_id+""", map_out."""+conf.table_schema_dt+""", map_out."""+conf.table_schema_lat+""", map_out."""+conf.table_schema_lon+""")
-    USING \"python extract_path_segments.py """ + conf.config_file + """\"
+    SELECT TRANSFORM(map_out."""+conf.table_schema_id+""", map_out."""+conf.table_schema_dt+""", map_out."""+conf.table_schema_lat+""", map_out."""+conf.table_schema_lon+f""")
+    USING "python extract_path_segments.py scripts/{conf.config_file} " 
     AS id,alat,blat,alon,blon,adt,bdt,time,distance,velocity
     ;   
   """
@@ -100,22 +100,24 @@ def extract_trip_line_intersects(configuration):
 
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
 
   
-    ADD FILES conf/config.py scripts/tripline_bins.py conf/"""+configuration.config_file+""";
+    ADD FILES scripts/config.py scripts/tripline_bins.py scripts/{configuration.config_file};
 
     FROM """ + configuration.database_name + """.micro_path_track_extract_""" + configuration.table_name + """
     INSERT OVERWRITE TABLE """ + configuration.database_name + """.micro_path_tripline_bins_""" + configuration.table_name + """
     
     SELECT TRANSFORM(alat, alon, blat, blon, adt, bdt, velocity, id)
-    USING \"python tripline_bins.py """ + configuration.config_file + """ \"
+    USING "python tripline_bins.py """ + configuration.config_file + """
     AS intersectX,intersectY,dt,velocity,direction,track_id
     ;   
     """
   print("***hql_script***")
   print(hql_script)
-  subprocessCall(["hive","-e",hql_script]) 
+  subprocessCall(["hive","-e",hql_script]) # changed line 112 with f function scripts(orignal + configuration.config_file + f""""
+    # AS intersectX,intersectY,dt,velocity,direction,track_id
+    # ;   )
   
 #
 # take values form micro_path_tripline_bins and aggregate the counts
@@ -129,11 +131,11 @@ def aggregate_intersection_list(configuration):
   )
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
     set mapred.map.tasks=96;
     set mapred.reduce.tasks=96;
     
-    INSERT OVERWRITE TABLE """ + configuration.database_name + """.micro_path_intersect_list_""" + configuration.table_name + """
+    INSERT OVERWRITE TABLE f"{configuration.database_name} .micro_path_intersect_list_ {configuration.table_name}"
     
     SELECT 
       intersectX,intersectY,dt
@@ -165,7 +167,7 @@ def aggregate_intersection_points(configuration):
   )
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
     set mapred.map.tasks=96;
     set mapred.reduce.tasks=96;
     
@@ -186,7 +188,7 @@ def aggregate_intersection_velocity(configuration):
   )
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
     set mapred.map.tasks=96;
     set mapred.reduce.tasks=96;
     
@@ -207,7 +209,7 @@ def aggregate_intersection_direction(configuration):
   )
 
   #hadoop streaming to extract paths
-  hql_script = """
+  hql_script = f"""
     set mapred.map.tasks=96;
     set mapred.reduce.tasks=96;
     
