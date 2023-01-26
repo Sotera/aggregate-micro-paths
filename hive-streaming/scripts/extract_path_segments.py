@@ -6,6 +6,7 @@
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
 #
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,14 +25,13 @@ logfilename = curdir / "extract_path_segments.log"
 logging.basicConfig(filename=logfilename, level=logging.WARNING)
 logging.debug("Running extract_path_segments.py")
 
-# This import works when running in the hive query created in AggregateMicroPaths.py.
 try:
     from config import AggregateMicroPathConfig
 except ImportError as err:
-    print(
-        ">>> Failed to import AggregateMicroPathConfig from config.py\n"
-        ">>> Try: 'python extract_path_segments.py ais.ini' from scripts/. Or\n"
-        ">>> Try: 'python -m scripts.extract_path_segments.py conf/ais.ini' from parent dir."
+    logging.error(f"""
+        Failed to import AggregateMicroPathConfig from config.py. Check it's in 
+        this folder ({curdir}). Other locations will cause differences between 
+        hive execution and local bash execution."""
         )
     raise(err)
 
@@ -47,7 +47,6 @@ def wrapDistances(d1, d2):
     elif d2 < -90 and d1 > 90:
         d1 = d1 - 360
     return (d1, d2)
-
 
 def computeDistanceKM(lat1, lon1, lat2, lon2):
     """Computes haversine distance in km from latlon1 to latlon2."""
@@ -65,12 +64,8 @@ def computeDistanceKM(lat1, lon1, lat2, lon2):
     return R * c
 
 
-def main():
-    """Because "if __name__" is called on import so can only call funcs defined above."""
-    parse_stdin()
-
-
 def parse_stdin():
+    """The main function."""
 
     current_user = prevline = hash_latlon = dt_parse = None
 
@@ -109,6 +104,7 @@ def parse_stdin():
             print(f"*** -> {err=}, {type(err)=} ***")
             continue
 
+        distance = computeDistanceKM(alt, aln, blt, bln)
         distance = computeDistanceKM(alt, aln, blt, bln)
 
         # if the distance was too large, skip the segment
@@ -165,4 +161,4 @@ def user_has_changed(current_user, user_id):
 if __name__ == "__main__":
     logging.debug(f"argv: {sys.argv}")
     configuration = AggregateMicroPathConfig(sys.argv.pop())
-    main()
+    parse_stdin()

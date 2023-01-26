@@ -166,3 +166,4 @@ cython_debug/
 hive-streaming/*.csv
 *output/
 hive-streaming/scripts/000000_0
+hive-streaming/000000_0
