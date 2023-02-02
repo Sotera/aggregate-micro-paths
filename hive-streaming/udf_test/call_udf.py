@@ -1,13 +1,15 @@
+# Test UDF's ability to import other files like config.py.
+# Found a solution using pydoc.importfile("filename").
+# call_udf.py -> hive -e my_udf.py -> importfile("config.py") -> config.math()
+
 import logging
 from pathlib import Path
 import subprocess
 
-path = Path()  # Path("./scripts")
-
-scripts = " ".join([str(x) for x in path.glob("**/*.py")])
+scripts = " ".join([str(x) for x in Path().glob("**/*.py")])
 hql_init = f"""set mapred.reduce.tasks=96; set mapred.map.tasks=96;
     set hive.server2.logging.operation.level=EXECUTION;
-    ADD FILES {scripts};
+    ADD FILES {scripts} ;
     LIST FILES;
     """
 

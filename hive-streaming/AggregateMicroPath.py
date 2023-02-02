@@ -21,7 +21,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.WARNING)
 
 # Add the conf path to our path so we can call the blanketconfig
-from scripts.config import AggregateMicroPathConfig as AMP_Config
+from conf.config import AggregateMicroPathConfig as AMP_Config
 
 
 def main(config_file, base_dir="."):
@@ -60,7 +60,7 @@ def main(config_file, base_dir="."):
 def set_globals(C: AMP_Config) -> None:
     """Declare global vars for boilerplate hql script."""
     global hql_init
-    scripts = " ".join([str(x) for x in Path("./scripts").glob("**/*.py")])
+    scripts = " ".join([str(x) for x in Path().glob("**/*.py")])
     hql_init = f"""set mapred.reduce.tasks=96; set mapred.map.tasks=96;
     set hive.server2.logging.operation.level=EXECUTION;
     ADD FILES {scripts} {C.config_file};
