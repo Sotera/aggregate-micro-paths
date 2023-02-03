@@ -40,8 +40,7 @@ class AggregateMicroPathConfig:
         parser.read(self.config_file)
         if not parser.sections():
             msg = f"""Config file is empty or has no sections.
-                -> {self.config_file = }
-            """
+                -> {self.config_file = }"""
             logging.debug(msg)
             raise FileNotFoundError(msg)
         return parser
@@ -56,8 +55,8 @@ class AggregateMicroPathConfig:
         self.table_schema_dt = parser.get(AMP, "table_schema_dt")
         self.table_schema_lat = parser.get(AMP, "table_schema_lat")
         self.table_schema_lon = parser.get(AMP, "table_schema_lon")
-        self.time_filter = parser.get(AMP, "time_filter")
-        self.distance_filter = parser.get(AMP, "distance_filter")
+        self.time_filter = float(parser.get(AMP, "time_filter"))
+        self.distance_filter = float(parser.get(AMP, "distance_filter"))
         self.tripLat1 = float(parser.get(AMP, "lower_left_lat"))
         self.tripLon1 = float(parser.get(AMP, "lower_left_lon"))
         self.tripLat2 = float(parser.get(AMP, "upper_right_lat"))

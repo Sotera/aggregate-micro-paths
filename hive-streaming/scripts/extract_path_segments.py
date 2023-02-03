@@ -99,10 +99,10 @@ def parse_stdin():
             continue
 
         distance = computeDistanceKM(alt, aln, blt, bln)
-        logging.debug(f"{distance = } km")
 
         # if the distance was too large, skip the segment
         if distance > configuration.distance_filter:
+            logging.debug(f"{distance = }km > {configuration.distance_filter = }.")
             continue
 
         # calculate km / hr   (TODO??? Was there supposed to be a velocity filter here?  -crt)
@@ -116,7 +116,7 @@ def parse_stdin():
             segment = [user_id, alt, blt, aln, bln, adt, bdt, total_time, distance, -1]
             if total_time != 0:
                 segment[-1] = distance / (total_time / 3600)
-            segment = (str(x) for x in segment)
+            segment = "\t".join(str(x) for x in segment)
             logging.debug(f"{segment = }")
             print("\t".join(segment))  # stdout
 
@@ -132,7 +132,9 @@ def parse_line(line: str) -> tuple:
 
 
 def parse_date(dt: str) -> datetime:
-    """Return parsed date - after splitting on ".".  (Return None if parse fails.)"""
+    """Return parsed date in '2012-03-26 10:18:00[.nnnn]' format.
+    (Return None if parse fails.)
+    """
     try:
         return dateStrptime(dt.split(".")[0])
     except Exception as err:
@@ -142,7 +144,9 @@ def parse_date(dt: str) -> datetime:
 
 
 def dateStrptime(dt: str) -> datetime:
+    """Handle both 'T' and ' ' separators."""
     with contextlib.suppress(ValueError):
+        return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
     return None
 
