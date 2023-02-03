@@ -20,11 +20,9 @@ import math
 from pathlib import Path
 import logging
 
-print("<<<<<<< EXTRACT_PATH_SEGMENTS.PY >>>>>>>>", file=sys.stderr)
-
 curdir = Path(__file__).parent
-logging.basicConfig(level=logging.INFO)
-logging.debug(f"Running extract_path_segments.py. Curdir={curdir}.")
+logging.basicConfig(level=logging.DEBUG)
+logging.debug(f"<<<<<< extract_path_segments.py >>>>>> {curdir = }.")
 
 # UDFs cannot easily import local modules. But pydoc.importfile can. So.
 from pydoc import importfile
@@ -65,17 +63,17 @@ def parse_stdin():
     current_user = prevline = hash_latlon = dt_parse = None
 
     for i, line in enumerate(sys.stdin):
-        logging.debug(f"{line:8}: {line}")
-
         (user_id, dt, lat, lon) = parse_line(line)
-        logging.debug(f"user: {user_id}; dt: {dt}; lat: {lat}; lon: {lon}")
+        logging.debug(f"{user_id = }; {dt = }; {lat = }; {lon = }")
 
         dt_parse = parse_date(dt)
         if not dt_parse:
+            logging.debug(f"{dt = } failed to parse. Skip line.")
             continue
 
         # If user_id changes, update prevline etc. and read next line.
         if user_has_changed(current_user, user_id):
+            logging.debug(f"User changed from {current_user} to {user_id}. Skip line.")
             current_user = user_id
             prevline = (user_id, dt_parse, lat, lon)
             hash_latlon = {}
@@ -85,6 +83,7 @@ def parse_stdin():
         total_time = float(delta.days * 24 * 60 * 60 + delta.seconds)
         # if too much time had passed... then skip the line
         if total_time > configuration.time_filter:
+            logging.debug(f"{total_time = } > {configuration.time_filter = }. Skip line.")
             continue
 
         (auid, adt, alt, aln) = prevline
@@ -95,15 +94,15 @@ def parse_stdin():
             blt = float(blt)
             bln = float(bln)
         except Exception as err:
-            print(f"*** EXCEPTION after float() block in ${__file__} ***")
-            print(f"*** -> {err=}, {type(err)=} ***")
+            logging.error(f"*** EXCEPTION after float() block in ${__file__} ***")
+            logging.error(f"*** -> {err=}, {type(err)=} ***")
             continue
 
-        distance = computeDistanceKM(alt, aln, blt, bln)
         distance = computeDistanceKM(alt, aln, blt, bln)
 
         # if the distance was too large, skip the segment
         if distance > configuration.distance_filter:
+            logging.debug(f"{distance = }km > {configuration.distance_filter = }.")
             continue
 
         # calculate km / hr   (TODO??? Was there supposed to be a velocity filter here?  -crt)
@@ -117,11 +116,12 @@ def parse_stdin():
             segment = [user_id, alt, blt, aln, bln, adt, bdt, total_time, distance, -1]
             if total_time != 0:
                 segment[-1] = distance / (total_time / 3600)
-            segment = (str(x) for x in segment)
-
-            logging.debug("\t".join(segment))
+            segment = "\t".join(str(x) for x in segment)
+            logging.debug(f"{segment = }")
+            print("\t".join(segment))  # stdout
 
         prevline = (user_id, dt_parse, lat, lon)
+        logging.debug(f"{prevline = }")
 
 
 def parse_line(line: str) -> tuple:
@@ -132,7 +132,9 @@ def parse_line(line: str) -> tuple:
 
 
 def parse_date(dt: str) -> datetime:
-    """Return parsed date - after splitting on ".".  (Return None if parse fails.)"""
+    """Return parsed date in '2012-03-26 10:18:00[.nnnn]' format.
+    (Return None if parse fails.)
+    """
     try:
         return dateStrptime(dt.split(".")[0])
     except Exception as err:
@@ -142,7 +144,9 @@ def parse_date(dt: str) -> datetime:
 
 
 def dateStrptime(dt: str) -> datetime:
+    """Handle both 'T' and ' ' separators."""
     with contextlib.suppress(ValueError):
+        return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
     return None
 
@@ -154,12 +158,7 @@ def user_has_changed(current_user, user_id):
 #####
 
 if __name__ == "__main__":
-    logging.debug(f"argv: {sys.argv}")
+    logging.debug(f"{__name__}: {sys.argv = }")
     config_file = sys.argv.pop()  # TODO use argparse or such
-    try:
-        configuration = AggregateMicroPathConfig(config_file)
-    except Exception:
-        basename = Path(config_file).name
-        logging.debug("Trying *{basename}* as fallback config.")
-        configuration = AggregateMicroPathConfig(basename)
+    configuration = AggregateMicroPathConfig(config_file)
     parse_stdin()

@@ -1,7 +1,12 @@
-#!/usr/bin/env/python
+# Test UDF ability to import local modules.
+# Solution found using pydoc.importfile.
+
 import sys
 from pathlib import Path
 import logging
+
+# Pydoc.importfile allows UDF to import local modules w/o
+# having to zip & send the whole virtual env.
 from pydoc import importfile
 
 config = importfile("config.py")
