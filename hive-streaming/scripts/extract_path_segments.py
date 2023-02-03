@@ -21,8 +21,8 @@ from pathlib import Path
 import logging
 
 curdir = Path(__file__).parent
-logging.basicConfig(level=logging.DEBUG)
-logging.debug(f"<<<<<< extract_path_segments.py >>>>>> {curdir = }.")
+logging.basicConfig(level=logging.INFO)
+logging.info(f"<<<<<< extract_path_segments.py >>>>>> {curdir = }.")
 
 # UDFs cannot easily import local modules. But pydoc.importfile can. So.
 from pydoc import importfile
