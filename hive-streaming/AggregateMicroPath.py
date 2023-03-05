@@ -13,14 +13,19 @@
 # limitations under the License.
 
 from time import time, localtime, strftime
+import sys
 import subprocess
 from optparse import OptionParser
 import logging
 from pathlib import Path
 
+assert sys.version_info.major >= 3  # For many things.
+assert sys.version_info.minor >= 8  # f-string debug relies on this
+
 logging.basicConfig(level=logging.WARNING)
 
-# Add the conf path to our path so we can call the blanketconfig
+# We run on staging so do a regular import.
+# (The UDF functions have to use a different method.)
 from conf.config import AggregateMicroPathConfig as AMP_Config
 
 
