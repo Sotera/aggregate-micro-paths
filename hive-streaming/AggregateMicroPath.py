@@ -22,7 +22,7 @@ from pathlib import Path
 assert sys.version_info.major >= 3  # For many things.
 assert sys.version_info.minor >= 8  # f-string debug relies on this
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 # We run on staging so do a regular import.
 # (The UDF functions have to use a different method.)

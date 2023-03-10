@@ -32,7 +32,7 @@ assert sys.version_info.major >= 3  # For many things.
 assert sys.version_info.minor >= 8  # f-string debug relies on this
 
 curdir = Path(__file__).parent
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.debug(f"<<<<<< {__file__} >>>>>> {curdir = }.")
 
 # UDFs cannot easily import local modules. But pydoc.importfile can. So.
@@ -75,7 +75,7 @@ def parse_stdin():
 
     for i, line in enumerate(sys.stdin):
         (user_id, dt, lat, lon) = parse_line(line)
-        logging.debug(f"{user_id = }; {dt = }; {lat = }; {lon = }")
+        # logging.debug(f"{user_id = }; {dt = }; {lat = }; {lon = }")
 
         dt_parse = parse_date(dt)
         if not dt_parse:
@@ -128,11 +128,10 @@ def parse_stdin():
             if total_time != 0:
                 segment[-1] = distance / (total_time / 3600)
             segment = "\t".join(str(x) for x in segment)
-            logging.debug(f"{segment = }")
-            print("\t".join(segment))  # stdout
+            print(segment)  # stdout
 
         prevline = (user_id, dt_parse, lat, lon)
-        logging.debug(f"{prevline = }")
+        # logging.debug(f"{prevline = }")
 
 
 def parse_line(line: str) -> tuple:
