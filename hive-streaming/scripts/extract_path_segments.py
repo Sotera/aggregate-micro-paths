@@ -1,17 +1,25 @@
-# Copyright 2016 Sotera Defense Solutions Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""UDF sent to worker nodes to extract path segments.
+
+Usage: 
+    Sent by AggregateMicroPaths.py as a user-defined function (UDF).
+
+Author:
+    Sotera / KeyW / Jacobs (c) 2016 - 2023
+
+Copyright 2016 Sotera Defense Solutions Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 import contextlib
 import sys
@@ -20,9 +28,12 @@ import math
 from pathlib import Path
 import logging
 
+assert sys.version_info.major >= 3  # For many things.
+assert sys.version_info.minor >= 8  # f-string debug relies on this
+
 curdir = Path(__file__).parent
 logging.basicConfig(level=logging.DEBUG)
-logging.debug(f"<<<<<< extract_path_segments.py >>>>>> {curdir = }.")
+logging.debug(f"<<<<<< {__file__} >>>>>> {curdir = }.")
 
 # UDFs cannot easily import local modules. But pydoc.importfile can. So.
 from pydoc import importfile
