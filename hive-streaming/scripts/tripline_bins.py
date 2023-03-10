@@ -271,9 +271,9 @@ def temporalSplit(dt, which):
 configuration = AggregateMicroPathConfig(sys.argv.pop())
 for line in sys.stdin:
     track_row = line.split("\t")
-    logging.debug(track_row)
+    logging.debug(f"{track_row = }")
     # (lat1, lon1, lat2, lon2, date1, date2, vel, track_id) = track_row
-    id, lat1, lat2, lon1, lon2, date1, date2, _time, _distance, vel = track_row
+    track_id, lat1, lat2, lon1, lon2, date1, date2, _time, _distance, vel = track_row
 
     track_id = track_id.strip()
     vel = float(vel)
@@ -402,7 +402,9 @@ for line in sys.stdin:
             dt = interpolatedTime(start_dt, lat1, lon1, intersectX, intersectY, vel)
             finalDate = temporalSplit(dt, configuration.temporal_split)
             out = [intersectX, intersectY, finalDate, vel, direction, track_id]
+            logging.info(f"Before map: {out}")
             out = map(lambda x: str(x), out)
+            logging.info(f"After map: {out}")
             print("\t".join(out))
 # stoptime = time()-starttime
 # print(stoptime)
