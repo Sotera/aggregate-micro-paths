@@ -13,14 +13,19 @@
 # limitations under the License.
 
 from time import time, localtime, strftime
+import sys
 import subprocess
 from optparse import OptionParser
 import logging
 from pathlib import Path
 
-logging.basicConfig(level=logging.WARNING)
+assert sys.version_info.major >= 3  # For many things.
+assert sys.version_info.minor >= 8  # f-string debug relies on this
 
-# Add the conf path to our path so we can call the blanketconfig
+logging.basicConfig(level=logging.INFO)
+
+# We run on staging so do a regular import.
+# (The UDF functions have to use a different method.)
 from conf.config import AggregateMicroPathConfig as AMP_Config
 
 
@@ -111,11 +116,17 @@ def extract_trip_line_intersects(
         "intersectX string, intersectY string, dt string, velocity float, "
         "direction float, track_id string"
     )
+
+    # Old had this input field order:
+    #   SELECT ..(alat, alon, blat, blon, adt, bdt, velocity, id)
+    # But above the in_table should have this formaat:
+    #   AS id,alat,blat,alon,blon,adt,bdt,time,distance,velocity
+
     hql_script = f"""{hql_init}; 
 
     FROM {C.database_name}.{in_table}_{C.table_name}
     INSERT OVERWRITE TABLE {C.database_name}.{out_table}_{C.table_name}
-    SELECT TRANSFORM ( alat, alon, blat, blon, adt, bdt, velocity, id )
+    SELECT TRANSFORM ( id,alat,blat,alon,blon,adt,bdt,time,distance,velocity )
     USING \"python {pyscript} {C.config_file}\"
     AS intersectX,intersectY,dt,velocity,direction,track_id
     ;   
